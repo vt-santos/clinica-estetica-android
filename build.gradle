@@ -1,0 +1,9 @@
+plugins {
+    id 'com.android.application' version '9.5.0' apply false
+}
+
+// O OneDrive trava arquivos durante a sincronização, então o build fica fora dele.
+def buildRoot = "${System.getenv('LOCALAPPDATA')}/ClinicaEstetica/build"
+allprojects { project ->
+    project.layout.buildDirectory.set(file("$buildRoot/${project.name}"))
+}

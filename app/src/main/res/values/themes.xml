@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Paleta do app -->
+    <color name="peach">#E6B39A</color>
+    <color name="sand">#E6CBA5</color>
+    <color name="cream">#EDE3B4</color>
+    <color name="sage">#8B9E9B</color>
+    <color name="slate">#6D7578</color>
+
+    <!-- Derivadas da paleta, para fundo e texto legíveis -->
+    <color name="primary">@color/slate</color>
+    <color name="surface">#FBF8EC</color>
+    <color name="ink">#33393B</color>
+
+    <style name="Theme.Clinica" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="android:colorAccent">@color/primary</item>
+        <item name="android:datePickerDialogTheme">@style/Theme.Clinica.Picker</item>
+        <item name="android:timePickerDialogTheme">@style/Theme.Clinica.Picker</item>
+        <item name="colorPrimaryContainer">@color/peach</item>
+        <item name="colorOnPrimaryContainer">@color/ink</item>
+        <item name="colorSecondaryContainer">@color/peach</item>
+        <item name="colorOnSecondaryContainer">@color/ink</item>
+        <item name="colorSecondary">@color/slate</item>
+        <item name="android:colorControlActivated">@color/slate</item>
+        <item name="colorTertiary">@color/sage</item>
+        <item name="android:colorBackground">@color/surface</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorSurfaceContainer">@color/surface</item>
+        <item name="colorSurfaceContainerLow">@color/surface</item>
+        <item name="colorSurfaceContainerHigh">@color/surface</item>
+        <item name="colorOnSurface">@color/ink</item>
+        <item name="colorOnSurfaceVariant">@color/ink</item>
+        <item name="colorOnBackground">@color/ink</item>
+        <item name="colorOutline">@color/slate</item>
+        <item name="colorOutlineVariant">@color/sage</item>
+        <item name="android:textColorPrimary">@color/ink</item>
+        <item name="android:textColorSecondary">@color/ink</item>
+        <item name="android:statusBarColor">@color/cream</item>
+        <item name="android:navigationBarColor">@color/surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+
+    <style name="Theme.Clinica.Picker" parent="android:Theme.Material.Light.Dialog">
+        <item name="android:colorAccent">@color/primary</item>
+    </style>
+</resources>
