@@ -85,6 +85,12 @@ public final class FormCatalog {
 
     public static final String[] APPOINTMENT_TYPES = {"Consulta", "Retorno"};
 
+    public static final int ADULT_AGE = 18;
+
+    public static final String[] GUARDIAN_RELATIONSHIPS = {
+            "Mãe", "Pai", "Avó", "Avô", "Tutor(a) legal", "Outro",
+    };
+
     public static final String[] REMINDER_LABELS = {
             "Sem lembrete", "15 minutos antes", "1 hora antes", "1 dia antes",
     };

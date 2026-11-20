@@ -10,6 +10,7 @@ import android.widget.TextView;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.android.material.textfield.TextInputEditText;
 
 import org.json.JSONException;
@@ -23,11 +24,16 @@ import java.util.Map;
 import br.com.clinicaestetica.R;
 import br.com.clinicaestetica.data.Async;
 import br.com.clinicaestetica.data.Consent;
+import br.com.clinicaestetica.data.ConsentContent;
+import br.com.clinicaestetica.data.Cpf;
 import br.com.clinicaestetica.data.FormCatalog;
 import br.com.clinicaestetica.data.Json;
 import br.com.clinicaestetica.data.Patient;
 
-/** Cadastro com todos os campos da Ficha de Anamnese Facial. */
+/**
+ * Cadastro com todos os campos da Ficha de Anamnese Facial. A ficha só é gravada junto com
+ * um termo assinado para o texto exato que está na tela.
+ */
 public class PatientFormActivity extends ScreenActivity {
     static final String EXTRA_PATIENT_ID = "patient_id";
 
@@ -38,6 +44,7 @@ public class PatientFormActivity extends ScreenActivity {
     private static final int NAME = InputType.TYPE_CLASS_TEXT
             | InputType.TYPE_TEXT_FLAG_CAP_WORDS;
     private static final int SIGNATURE_HEIGHT_DP = 240;
+    private static final String BLANK = "________";
 
     private static final class Answer {
         final ChipGroup yesNo;
@@ -54,9 +61,13 @@ public class PatientFormActivity extends ScreenActivity {
     private Patient patient;
     private Patient original;
     private Consent consent;
+
+    private TextView ageView;
+    private LinearLayout guardianSection;
     private LinearLayout signing;
     private View signAgain;
     private TextView termView;
+    private TextView signatureLabel;
     private MaterialCheckBox accepted;
     private TextInputEditText place;
     private SignatureView signature;
@@ -64,7 +75,8 @@ public class PatientFormActivity extends ScreenActivity {
     private TextInputEditText name, sex, address, neighborhood, city, cep, cellPhone, homePhone,
             workPhone, email, ethnicity, maritalStatus, profession, referral, visitReason,
             emergencyName, emergencyPhone, doctorName, doctorPhone, healthPlan, healthPlanCard,
-            hospital;
+            hospital, guardianName, guardianCpf, guardianPhone;
+    private MaterialAutoCompleteTextView guardianRelationship;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,9 +107,10 @@ public class PatientFormActivity extends ScreenActivity {
         Ui.section(content, "Dados pessoais");
         name = Ui.field(content, "Nome *", patient.name, NAME);
         LinearLayout line = Ui.row(content);
-        Ui.dateField(line, "Data de nascimento", birthDate);
+        Ui.dateField(line, "Data de nascimento *", birthDate, this::onBirthDateChanged);
         sex = Ui.field(line, "Sexo", patient.sex);
         maritalStatus = Ui.field(line, "Estado civil", patient.maritalStatus);
+        ageView = Ui.text(content, "", 14);
         line = Ui.row(content);
         ethnicity = Ui.field(line, "Etnia", patient.ethnicity);
         profession = Ui.field(line, "Profissão", patient.profession);
@@ -113,6 +126,8 @@ public class PatientFormActivity extends ScreenActivity {
         email = Ui.field(content, "E-mail", patient.email, EMAIL);
         referral = Ui.field(content, "Indicação", patient.referral);
         visitReason = Ui.field(content, "Motivo da visita", patient.visitReason);
+
+        buildGuardian();
 
         Ui.section(content, "Em caso de emergência");
         line = Ui.row(content);
@@ -132,6 +147,29 @@ public class PatientFormActivity extends ScreenActivity {
             addQuestion(question, saved.optJSONObject(question.key));
         }
         buildConsent();
+
+        for (TextView field : new TextView[]{name, guardianName, guardianCpf,
+                guardianRelationship}) {
+            Ui.onChange(field, this::refreshTerm);
+        }
+        onBirthDateChanged();
+    }
+
+    /** Aparece só para menores de idade; quem assina passa a ser o responsável. */
+    private void buildGuardian() {
+        guardianSection = Ui.column(this);
+        content.addView(guardianSection);
+        Ui.section(guardianSection, "Responsável legal");
+        Ui.text(guardianSection, "A paciente é menor de idade. O termo será assinado pelo "
+                + "responsável legal.", 14);
+        LinearLayout line = Ui.row(guardianSection);
+        guardianName = Ui.field(line, "Nome do responsável *", patient.guardianName, NAME);
+        guardianCpf = Ui.field(line, "CPF do responsável *", Cpf.format(patient.guardianCpf),
+                InputType.TYPE_CLASS_NUMBER);
+        line = Ui.row(guardianSection);
+        guardianRelationship = Ui.dropdown(line, "Parentesco *",
+                FormCatalog.GUARDIAN_RELATIONSHIPS, patient.guardianRelationship);
+        guardianPhone = Ui.field(line, "Telefone do responsável", patient.guardianPhone, PHONE);
     }
 
     private void buildConsent() {
@@ -143,6 +181,7 @@ public class PatientFormActivity extends ScreenActivity {
             signAgain = Ui.action(content, "Assinar novamente", view -> {
                 view.setVisibility(View.GONE);
                 signing.setVisibility(View.VISIBLE);
+                refreshTerm();
             });
         }
         content.addView(signing);
@@ -153,7 +192,7 @@ public class PatientFormActivity extends ScreenActivity {
         signing.addView(accepted);
         place = Ui.field(signing, "Local", patient.city);
 
-        Ui.text(signing, "Assinatura da paciente", 15);
+        signatureLabel = Ui.text(signing, "", 15);
         MaterialCardView pad = new MaterialCardView(this, null,
                 com.google.android.material.R.attr.materialCardViewOutlinedStyle);
         signature = new SignatureView(this);
@@ -174,62 +213,100 @@ public class PatientFormActivity extends ScreenActivity {
         answers.put(question.key, new Answer(yesNo, detail));
     }
 
+    private void onBirthDateChanged() {
+        boolean minor = isMinor(birthDate[0]);
+        if (birthDate[0] == 0) {
+            ageView.setText("Informe a data de nascimento para verificar a idade.");
+        } else if (birthDate[0] > System.currentTimeMillis()) {
+            ageView.setText("A data de nascimento está no futuro.");
+        } else {
+            int age = Fmt.age(birthDate[0]);
+            ageView.setText(age + (age == 1 ? " ano" : " anos") + (minor ? " · Menor de idade" : ""));
+        }
+        guardianSection.setVisibility(minor ? View.VISIBLE : View.GONE);
+        signatureLabel.setText(minor ? "Assinatura do(a) responsável legal" : "Assinatura da paciente");
+        refreshTerm();
+    }
+
+    /**
+     * Mantém o termo da tela igual ao que vai ser gravado. Se ele mudar depois da assinatura,
+     * a assinatura é descartada, porque foi feita para outro texto.
+     */
+    private void refreshTerm() {
+        if (signing == null || signing.getVisibility() != View.VISIBLE) {
+            return;
+        }
+        Patient edited = fromForm();
+        String term = termFor(edited, changesIn(edited));
+        if (term.equals(termView.getText().toString())) {
+            return;
+        }
+        termView.setText(term);
+        if (accepted.isChecked() || !signature.isEmpty()) {
+            accepted.setChecked(false);
+            signature.clear();
+            Ui.toast(this, "O termo mudou. Colha a assinatura novamente.");
+        }
+    }
+
     private void save() {
         if (patient == null || name == null) {
             return;
         }
-        String patientName = Ui.value(name);
-        if (patientName.isEmpty()) {
-            Ui.toast(this, "Informe o nome da paciente.");
+        Patient edited = fromForm();
+        String problem = validate(edited);
+        if (problem != null) {
+            Ui.toast(this, problem);
             return;
         }
-        patient.name = patientName;
-        patient.sex = Ui.value(sex);
-        patient.birthDate = birthDate[0];
-        patient.address = Ui.value(address);
-        patient.neighborhood = Ui.value(neighborhood);
-        patient.city = Ui.value(city);
-        patient.cep = Ui.value(cep);
-        patient.cellPhone = Ui.value(cellPhone);
-        patient.homePhone = Ui.value(homePhone);
-        patient.workPhone = Ui.value(workPhone);
-        patient.email = Ui.value(email);
-        patient.ethnicity = Ui.value(ethnicity);
-        patient.maritalStatus = Ui.value(maritalStatus);
-        patient.profession = Ui.value(profession);
-        patient.referral = Ui.value(referral);
-        patient.visitReason = Ui.value(visitReason);
-        patient.emergencyName = Ui.value(emergencyName);
-        patient.emergencyPhone = Ui.value(emergencyPhone);
-        patient.doctorName = Ui.value(doctorName);
-        patient.doctorPhone = Ui.value(doctorPhone);
-        patient.healthPlan = Ui.value(healthPlan);
-        patient.healthPlanCard = Ui.value(healthPlanCard);
-        patient.hospital = Ui.value(hospital);
-        patient.historyJson = historyJson();
 
-        List<String> changes = original == null ? Collections.emptyList()
-                : PatientChanges.between(original, patient);
+        List<String> changes = changesIn(edited);
         boolean signingOpen = signing.getVisibility() == View.VISIBLE;
         if (!signingOpen && changes.isEmpty()) {
             finish();
             return;
         }
-        String term = termFor(changes);
+        String term = termFor(edited, changes);
         if (!signingOpen || !term.equals(termView.getText().toString())) {
             requestSignature(term);
             return;
         }
         if (!accepted.isChecked()) {
-            Ui.toast(this, "Marque que a paciente leu e concorda com o termo.");
+            Ui.toast(this, "Marque a caixa de aceite do termo.");
             return;
         }
         if (signature.isEmpty()) {
-            Ui.toast(this, "Colha a assinatura da paciente.");
+            Ui.toast(this, "Colha a assinatura com a caneta.");
             return;
         }
-        Consent signed = newConsent(term);
-        Async.run(() -> dao.savePatient(patient, signed), this::finish);
+        Consent signed = newConsent(edited, term);
+        Async.run(() -> dao.savePatient(edited, signed), this::finish);
+    }
+
+    /** Devolve a mensagem do primeiro problema da ficha, ou null se estiver tudo certo. */
+    private String validate(Patient edited) {
+        if (edited.name.isEmpty()) {
+            return "Informe o nome da paciente.";
+        }
+        if (edited.birthDate == 0) {
+            return "Informe a data de nascimento para verificar a idade.";
+        }
+        if (edited.birthDate > System.currentTimeMillis()) {
+            return "A data de nascimento está no futuro.";
+        }
+        if (!isMinor(edited.birthDate)) {
+            return null;
+        }
+        if (edited.guardianName.isEmpty()) {
+            return "Paciente menor de idade: informe o nome do responsável legal.";
+        }
+        if (!Cpf.isValid(edited.guardianCpf)) {
+            return "CPF do responsável inválido.";
+        }
+        if (edited.guardianRelationship.isEmpty()) {
+            return "Informe o parentesco do responsável.";
+        }
+        return null;
     }
 
     /** Sem assinatura válida para o texto atual, a ficha alterada não é salva. */
@@ -241,12 +318,22 @@ public class PatientFormActivity extends ScreenActivity {
         if (signAgain != null) {
             signAgain.setVisibility(View.GONE);
         }
-        Ui.toast(this, "A ficha foi alterada. Peça uma nova assinatura da paciente.");
+        Ui.toast(this, consent == null ? "Confira o termo e colha a assinatura."
+                : "A ficha foi alterada. Peça uma nova assinatura.");
         scroll.post(() -> scroll.smoothScrollTo(0, signing.getTop()));
     }
 
-    private String termFor(List<String> changes) {
-        String term = getString(R.string.term_text);
+    private List<String> changesIn(Patient edited) {
+        return original == null ? Collections.emptyList()
+                : PatientChanges.between(original, edited);
+    }
+
+    private String termFor(Patient edited, List<String> changes) {
+        String term = isMinor(edited.birthDate)
+                ? getString(R.string.term_minor_text, orBlank(edited.guardianName),
+                orBlank(Cpf.format(edited.guardianCpf)),
+                orBlank(edited.guardianRelationship).toLowerCase(), orBlank(edited.name))
+                : getString(R.string.term_text);
         if (consent == null || changes.isEmpty()) {
             return term;
         }
@@ -255,13 +342,72 @@ public class PatientFormActivity extends ScreenActivity {
         return notice + "\n\n" + term;
     }
 
-    private Consent newConsent(String term) {
+    private Consent newConsent(Patient edited, String term) {
+        ConsentContent signed = new ConsentContent();
+        signed.termText = term;
+        signed.place = Ui.value(place);
+        signed.accepted = accepted.isChecked();
+        if (isMinor(edited.birthDate)) {
+            signed.signerName = edited.guardianName;
+            signed.signerRole = "Responsável legal (" + edited.guardianRelationship + ")";
+            signed.signerCpf = edited.guardianCpf;
+        } else {
+            signed.signerName = edited.name;
+            signed.signerRole = "Paciente";
+        }
+        signed.signaturePng = signature.toPng();
+
         Consent created = new Consent();
         created.signedAt = System.currentTimeMillis();
-        created.place = Ui.value(place);
-        created.termText = term;
-        created.signaturePng = signature.toPng();
+        created.content = signed;
         return created;
+    }
+
+    /** Monta uma cópia da paciente com o que está na tela, sem alterar a original. */
+    private Patient fromForm() {
+        Patient edited = new Patient();
+        edited.id = patient.id;
+        edited.createdAt = patient.createdAt;
+        edited.name = Ui.value(name);
+        edited.sex = Ui.value(sex);
+        edited.birthDate = birthDate[0];
+        edited.address = Ui.value(address);
+        edited.neighborhood = Ui.value(neighborhood);
+        edited.city = Ui.value(city);
+        edited.cep = Ui.value(cep);
+        edited.cellPhone = Ui.value(cellPhone);
+        edited.homePhone = Ui.value(homePhone);
+        edited.workPhone = Ui.value(workPhone);
+        edited.email = Ui.value(email);
+        edited.ethnicity = Ui.value(ethnicity);
+        edited.maritalStatus = Ui.value(maritalStatus);
+        edited.profession = Ui.value(profession);
+        edited.referral = Ui.value(referral);
+        edited.visitReason = Ui.value(visitReason);
+        edited.emergencyName = Ui.value(emergencyName);
+        edited.emergencyPhone = Ui.value(emergencyPhone);
+        edited.doctorName = Ui.value(doctorName);
+        edited.doctorPhone = Ui.value(doctorPhone);
+        edited.healthPlan = Ui.value(healthPlan);
+        edited.healthPlanCard = Ui.value(healthPlanCard);
+        edited.hospital = Ui.value(hospital);
+        edited.historyJson = historyJson();
+
+        boolean minor = isMinor(edited.birthDate);
+        edited.guardianName = minor ? Ui.value(guardianName) : "";
+        edited.guardianCpf = minor ? Cpf.digits(Ui.value(guardianCpf)) : "";
+        edited.guardianRelationship = minor ? Ui.value(guardianRelationship) : "";
+        edited.guardianPhone = minor ? Ui.value(guardianPhone) : "";
+        return edited;
+    }
+
+    private static boolean isMinor(long birthDate) {
+        return birthDate != 0 && birthDate <= System.currentTimeMillis()
+                && Fmt.age(birthDate) < FormCatalog.ADULT_AGE;
+    }
+
+    private static String orBlank(String value) {
+        return value == null || value.isEmpty() ? BLANK : value;
     }
 
     private String historyJson() {

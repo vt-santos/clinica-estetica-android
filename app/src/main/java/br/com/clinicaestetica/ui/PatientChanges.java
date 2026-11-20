@@ -5,6 +5,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import br.com.clinicaestetica.data.Cpf;
 import br.com.clinicaestetica.data.FormCatalog;
 import br.com.clinicaestetica.data.Json;
 import br.com.clinicaestetica.data.Patient;
@@ -39,6 +40,11 @@ final class PatientChanges {
         compare(changes, "Convênio médico", before.healthPlan, after.healthPlan);
         compare(changes, "Carteirinha", before.healthPlanCard, after.healthPlanCard);
         compare(changes, "Hospital", before.hospital, after.hospital);
+        compare(changes, "Responsável legal", before.guardianName, after.guardianName);
+        compare(changes, "CPF do responsável", Cpf.format(before.guardianCpf),
+                Cpf.format(after.guardianCpf));
+        compare(changes, "Parentesco", before.guardianRelationship, after.guardianRelationship);
+        compare(changes, "Telefone do responsável", before.guardianPhone, after.guardianPhone);
 
         JSONObject oldHistory = Json.object(before.historyJson);
         JSONObject newHistory = Json.object(after.historyJson);

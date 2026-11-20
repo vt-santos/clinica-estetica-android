@@ -6,5 +6,6 @@
     <string name="nav_agenda">Agenda</string>
     <string name="nav_payments">Pagamentos</string>
     <string name="term_change_notice">ATENÇÃO: esta ficha foi alterada depois da minha assinatura de %1$s. Estou ciente das alterações abaixo, que só passam a valer com esta nova assinatura:\n\n%2$s</string>
+    <string name="term_minor_text">Eu, %1$s, CPF %2$s, %3$s e responsável legal por %4$s, menor de idade, autorizo a realização dos procedimentos estéticos indicados e estou ciente e de acordo com todas as informações acima relacionadas.\n\nDeclaro que os dados informados nesta ficha são verdadeiros e me comprometo a avisar sobre qualquer alteração no estado de saúde da pessoa menor de idade sob minha responsabilidade.\n\nFui orientado(a) sobre os procedimentos indicados, os cuidados necessários e as possíveis reações, e sei que os resultados variam de pessoa para pessoa.</string>
     <string name="term_text">Estou ciente e de acordo com todas as informações acima relacionadas.\n\nDeclaro que os dados informados nesta ficha são verdadeiros e que me comprometo a avisar sobre qualquer alteração no meu estado de saúde.\n\nFui orientada sobre os procedimentos estéticos indicados, os cuidados necessários e as possíveis reações, e sei que os resultados variam de pessoa para pessoa.</string>
 </resources>

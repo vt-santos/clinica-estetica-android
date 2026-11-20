@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.Arrays;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -17,11 +18,11 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 
 /**
- * Criptografa as assinaturas com AES-256-GCM. A chave fica no Android Keystore e nunca sai
- * do aparelho. O id da paciente entra na autenticação, então a imagem de uma paciente não
- * abre se for copiada para o registro de outra.
+ * Cofre dos termos assinados. Criptografa com AES-256-GCM usando uma chave que fica no
+ * Android Keystore e nunca sai do aparelho. O id da paciente entra na autenticação, então
+ * um termo copiado para o registro de outra paciente não abre.
  */
-public final class SignatureVault {
+public final class ConsentVault {
     private static final String KEYSTORE = "AndroidKeyStore";
     private static final String KEY_ALIAS = "clinica_signature_key";
     private static final String TRANSFORMATION = "AES/GCM/NoPadding";
@@ -30,11 +31,26 @@ public final class SignatureVault {
 
     private static SecretKey testKey;
 
-    private SignatureVault() {
+    private ConsentVault() {
     }
 
-    /** Formato gravado no banco: IV de 12 bytes seguido do texto cifrado. */
-    public static byte[] encrypt(byte[] plain, long patientId) {
+    /** Criptografa e devolve em Base64, pronto para gravar como texto no banco. */
+    public static String seal(byte[] plain, long patientId) {
+        return Base64.getEncoder().encodeToString(encrypt(plain, patientId));
+    }
+
+    public static byte[] open(String sealed, long patientId) throws GeneralSecurityException {
+        byte[] stored;
+        try {
+            stored = Base64.getDecoder().decode(sealed);
+        } catch (IllegalArgumentException e) {
+            throw new GeneralSecurityException("Pacote do termo não é Base64 válido", e);
+        }
+        return decrypt(stored, patientId);
+    }
+
+    /** Formato binário: IV de 12 bytes seguido do texto cifrado com a etiqueta GCM. */
+    static byte[] encrypt(byte[] plain, long patientId) {
         try {
             Cipher cipher = Cipher.getInstance(TRANSFORMATION);
             cipher.init(Cipher.ENCRYPT_MODE, key());
@@ -45,11 +61,14 @@ public final class SignatureVault {
                     .put(sealed)
                     .array();
         } catch (GeneralSecurityException | IOException e) {
-            throw new IllegalStateException("Não foi possível criptografar a assinatura", e);
+            throw new IllegalStateException("Não foi possível criptografar o termo", e);
         }
     }
 
-    public static byte[] decrypt(byte[] stored, long patientId) throws GeneralSecurityException {
+    static byte[] decrypt(byte[] stored, long patientId) throws GeneralSecurityException {
+        if (stored == null || stored.length <= IV_BYTES) {
+            throw new GeneralSecurityException("Pacote do termo vazio ou incompleto");
+        }
         try {
             Cipher cipher = Cipher.getInstance(TRANSFORMATION);
             cipher.init(Cipher.DECRYPT_MODE, key(),

@@ -60,7 +60,7 @@ public interface AppDao {
             update(patient);
         }
         consent.patientId = patient.id;
-        consent.signatureEncrypted = SignatureVault.encrypt(consent.signaturePng, patient.id);
+        consent.sealedPackage = ConsentVault.seal(consent.content.toJson(), patient.id);
         insert(consent);
     }
 

@@ -12,8 +12,10 @@ import androidx.room.RoomDatabase;
 import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
+import java.security.GeneralSecurityException;
+
 @Database(entities = {Patient.class, SkinAssessment.class, TreatmentSession.class,
-        Appointment.class, Payment.class, Consent.class}, version = 3, exportSchema = false)
+        Appointment.class, Payment.class, Consent.class}, version = 4, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     private static final Migration MIGRATION_1_2 = new Migration(1, 2) {
         @Override
@@ -55,7 +57,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     values.put("place", row.getString(3));
                     values.put("termText", row.getString(4));
                     values.put("signatureEncrypted",
-                            SignatureVault.encrypt(row.getBlob(5), row.getLong(1)));
+                            ConsentVault.encrypt(row.getBlob(5), row.getLong(1)));
                     db.insert("consents_new", SQLiteDatabase.CONFLICT_ABORT, values);
                 }
             }
@@ -63,6 +65,61 @@ public abstract class AppDatabase extends RoomDatabase {
             db.execSQL("ALTER TABLE `consents_new` RENAME TO `consents`");
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_consents_patientId` "
                     + "ON `consents` (`patientId`)");
+        }
+    };
+
+    /**
+     * Junta texto, local, assinante e imagem de cada termo num único pacote criptografado em
+     * Base64, e cria as colunas do responsável legal.
+     */
+    private static final Migration MIGRATION_3_4 = new Migration(3, 4) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            for (String column : new String[]{"guardianName", "guardianCpf",
+                    "guardianRelationship", "guardianPhone"}) {
+                db.execSQL("ALTER TABLE `patients` ADD COLUMN `" + column + "` TEXT");
+            }
+            db.execSQL("CREATE TABLE `consents_new` ("
+                    + "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                    + "`patientId` INTEGER NOT NULL, "
+                    + "`signedAt` INTEGER NOT NULL, "
+                    + "`sealedPackage` TEXT, "
+                    + "FOREIGN KEY(`patientId`) REFERENCES `patients`(`id`) "
+                    + "ON UPDATE NO ACTION ON DELETE CASCADE)");
+            try (Cursor row = db.query("SELECT c.id, c.patientId, c.signedAt, c.place, "
+                    + "c.termText, c.signatureEncrypted, p.name FROM consents c "
+                    + "JOIN patients p ON p.id = c.patientId")) {
+                while (row.moveToNext()) {
+                    long patientId = row.getLong(1);
+                    ConsentContent content = new ConsentContent();
+                    content.place = row.getString(3);
+                    content.termText = row.getString(4);
+                    content.accepted = true;
+                    content.signerName = row.getString(6);
+                    content.signerRole = "Paciente";
+                    content.signaturePng = previousSignature(row.getBlob(5), patientId);
+
+                    ContentValues values = new ContentValues();
+                    values.put("id", row.getLong(0));
+                    values.put("patientId", patientId);
+                    values.put("signedAt", row.getLong(2));
+                    values.put("sealedPackage", ConsentVault.seal(content.toJson(), patientId));
+                    db.insert("consents_new", SQLiteDatabase.CONFLICT_ABORT, values);
+                }
+            }
+            db.execSQL("DROP TABLE `consents`");
+            db.execSQL("ALTER TABLE `consents_new` RENAME TO `consents`");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_consents_patientId` "
+                    + "ON `consents` (`patientId`)");
+        }
+
+        /** Sem a chave antiga, o termo continua guardado, só que sem a imagem. */
+        private byte[] previousSignature(byte[] encrypted, long patientId) {
+            try {
+                return ConsentVault.decrypt(encrypted, patientId);
+            } catch (GeneralSecurityException e) {
+                return null;
+            }
         }
     };
 
@@ -76,7 +133,7 @@ public abstract class AppDatabase extends RoomDatabase {
                 if (instance == null) {
                     instance = Room.databaseBuilder(context.getApplicationContext(),
                                     AppDatabase.class, "clinica.db")
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                             .build();
                 }
             }

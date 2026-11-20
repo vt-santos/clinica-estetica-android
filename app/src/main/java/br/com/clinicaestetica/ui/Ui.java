@@ -6,6 +6,7 @@ import android.content.Context;
 import android.graphics.Typeface;
 import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -126,13 +127,36 @@ final class Ui {
         return edit;
     }
 
+    /** Chama action sempre que o texto do campo mudar. */
+    static void onChange(TextView view, Runnable action) {
+        view.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence text, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence text, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable text) {
+                action.run();
+            }
+        });
+    }
+
     static String value(TextView view) {
         Editable text = view.getEditableText();
         return text == null ? view.getText().toString().trim() : text.toString().trim();
     }
 
-    /** Campo de data; o valor fica em millis[0], preservando a hora. */
     static TextInputEditText dateField(ViewGroup parent, String label, long[] millis) {
+        return dateField(parent, label, millis, null);
+    }
+
+    /** Campo de data; o valor fica em millis[0], preservando a hora. */
+    static TextInputEditText dateField(ViewGroup parent, String label, long[] millis,
+                                       Runnable onChange) {
         TextInputEditText edit = pickerField(parent, label,
                 millis[0] == 0 ? "" : Fmt.date(millis[0]));
         edit.setOnClickListener(view -> {
@@ -146,6 +170,9 @@ final class Ui {
                 calendar.set(year, month, day);
                 millis[0] = calendar.getTimeInMillis();
                 edit.setText(Fmt.date(millis[0]));
+                if (onChange != null) {
+                    onChange.run();
+                }
             }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH),
                     calendar.get(Calendar.DAY_OF_MONTH)).show();
         });

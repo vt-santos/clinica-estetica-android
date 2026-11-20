@@ -37,6 +37,12 @@ public class Patient {
     public String healthPlanCard;
     public String hospital;
 
+    // Responsável legal, obrigatório quando a paciente é menor de idade.
+    public String guardianName;
+    public String guardianCpf;
+    public String guardianRelationship;
+    public String guardianPhone;
+
     /** Respostas do histórico: {"chave": {"a": "S" ou "N", "d": "detalhe"}}. */
     public String historyJson;
 

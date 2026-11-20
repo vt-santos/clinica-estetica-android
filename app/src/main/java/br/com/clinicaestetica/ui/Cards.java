@@ -7,10 +7,11 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.provider.CalendarContract;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+
+import org.json.JSONException;
 
 import java.security.GeneralSecurityException;
 
@@ -20,9 +21,10 @@ import br.com.clinicaestetica.data.Appointment;
 import br.com.clinicaestetica.data.AppointmentRow;
 import br.com.clinicaestetica.data.Async;
 import br.com.clinicaestetica.data.Consent;
+import br.com.clinicaestetica.data.ConsentContent;
+import br.com.clinicaestetica.data.ConsentVault;
 import br.com.clinicaestetica.data.Payment;
 import br.com.clinicaestetica.data.PaymentRow;
-import br.com.clinicaestetica.data.SignatureVault;
 import br.com.clinicaestetica.reminder.ReminderScheduler;
 
 /** Cartões de consulta e pagamento, compartilhados entre as telas. */
@@ -61,34 +63,50 @@ final class Cards {
         });
     }
 
+    /** Termo aberto e imagem já decodificada, preparados fora da thread principal. */
+    private static final class OpenedConsent {
+        ConsentContent content;
+        Bitmap signature;
+    }
+
+    /** Abre o pacote criptografado do termo e mostra texto, quem assinou e a assinatura. */
     static void consent(ViewGroup parent, Consent consent) {
         Context context = parent.getContext();
         LinearLayout box = Ui.column(context);
         Ui.addWeighted(parent, box);
-        String place = empty(consent.place) ? "" : consent.place + ", ";
-        Ui.text(box, consent.termText, 15);
-        Ui.text(box, "Assinado em " + place + Fmt.dateTime(consent.signedAt), 14);
-
-        ImageView signature = new ImageView(context);
-        signature.setAdjustViewBounds(true);
-        signature.setScaleType(ImageView.ScaleType.FIT_START);
-        signature.setMaxHeight(Ui.dp(context, SIGNATURE_PREVIEW_DP));
-        Ui.addWeighted(box, signature);
-        Async.load(() -> decodeSignature(consent), bitmap -> {
-            if (bitmap != null) {
-                signature.setImageBitmap(bitmap);
-            } else {
-                signature.setVisibility(View.GONE);
-                Ui.text(box, "Assinatura indisponível: a chave não está neste aparelho.", 14);
+        Async.load(() -> open(consent), opened -> {
+            if (opened == null) {
+                Ui.text(box, "Termo de " + Fmt.dateTime(consent.signedAt)
+                        + " indisponível: a chave de criptografia não está neste aparelho.", 14);
+                return;
             }
+            ConsentContent content = opened.content;
+            String place = empty(content.place) ? "" : content.place + ", ";
+            Ui.text(box, content.termText, 15);
+            Ui.text(box, "Assinado por " + content.signerName + " (" + content.signerRole
+                    + ") em " + place + Fmt.dateTime(consent.signedAt), 14);
+            if (opened.signature == null) {
+                Ui.text(box, "Imagem da assinatura não disponível.", 14);
+                return;
+            }
+            ImageView signature = new ImageView(context);
+            signature.setAdjustViewBounds(true);
+            signature.setScaleType(ImageView.ScaleType.FIT_START);
+            signature.setMaxHeight(Ui.dp(context, SIGNATURE_PREVIEW_DP));
+            signature.setImageBitmap(opened.signature);
+            Ui.addWeighted(box, signature);
         });
     }
 
-    private static Bitmap decodeSignature(Consent consent) {
+    private static OpenedConsent open(Consent consent) {
         try {
-            byte[] png = SignatureVault.decrypt(consent.signatureEncrypted, consent.patientId);
-            return BitmapFactory.decodeByteArray(png, 0, png.length);
-        } catch (GeneralSecurityException e) {
+            OpenedConsent opened = new OpenedConsent();
+            opened.content = ConsentContent.fromJson(
+                    ConsentVault.open(consent.sealedPackage, consent.patientId));
+            byte[] png = opened.content.signaturePng;
+            opened.signature = png == null ? null : BitmapFactory.decodeByteArray(png, 0, png.length);
+            return opened;
+        } catch (GeneralSecurityException | JSONException e) {
             return null;
         }
     }

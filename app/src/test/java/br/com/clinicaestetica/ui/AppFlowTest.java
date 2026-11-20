@@ -2,16 +2,18 @@ package br.com.clinicaestetica.ui;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
 import android.app.AlarmManager;
+import android.app.DatePickerDialog;
 import android.app.Application;
 import android.app.NotificationManager;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -40,11 +42,14 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.annotation.GraphicsMode;
+import org.robolectric.shadows.ShadowDialog;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Base64;
+import java.util.Calendar;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -57,9 +62,10 @@ import br.com.clinicaestetica.data.AppDao;
 import br.com.clinicaestetica.data.AppDatabase;
 import br.com.clinicaestetica.data.Appointment;
 import br.com.clinicaestetica.data.Consent;
+import br.com.clinicaestetica.data.ConsentContent;
+import br.com.clinicaestetica.data.ConsentVault;
 import br.com.clinicaestetica.data.Patient;
 import br.com.clinicaestetica.data.Payment;
-import br.com.clinicaestetica.data.SignatureVault;
 import br.com.clinicaestetica.data.SkinAssessment;
 import br.com.clinicaestetica.data.TreatmentSession;
 
@@ -76,7 +82,7 @@ public class AppFlowTest {
 
     @Before
     public void useSoftwareKey() {
-        SignatureVault.useTestKey(new SecretKeySpec(new byte[32], "AES"));
+        ConsentVault.useTestKey(new SecretKeySpec(new byte[32], "AES"));
     }
 
     @Test
@@ -97,6 +103,7 @@ public class AppFlowTest {
         registersPendingPayment(patient.id);
         showsPatientRecord(patient.id);
         showsMainSections();
+        registersMinor();
     }
 
     private Patient registersPatient() throws Exception {
@@ -107,6 +114,10 @@ public class AppFlowTest {
         assertFalse("nome é obrigatório", form.isFinishing());
 
         setField(form, "Nome *", "Maria Silva");
+        save(form);
+        assertFalse("data de nascimento é obrigatória", form.isFinishing());
+        pickDate(form, "Data de nascimento *", 1990, Calendar.MARCH, 15);
+        assertFalse("adulta não pede responsável", field(root(form), "Nome do responsável *").isShown());
         setField(form, "Celular / WhatsApp", "(11) 98888-7777");
         setField(form, "Motivo da visita", "Manchas no rosto");
         setField(form, "Hospital", "Santa Casa");
@@ -133,13 +144,18 @@ public class AppFlowTest {
 
         Patient saved = db(() -> dao.allPatients().get(0));
         Consent consent = db(() -> dao.latestConsent(saved.id));
-        assertEquals("Brasília", consent.place);
-        assertTrue(consent.termText.startsWith("Estou ciente e de acordo"));
-        byte[] png = SignatureVault.decrypt(consent.signatureEncrypted, saved.id);
-        assertEquals("png aberto só com a chave", (byte) 0x89, png[0]);
-        assertNotEquals("banco não guarda png puro", (byte) 0x89, consent.signatureEncrypted[0]);
+        assertNull("conteúdo aberto não é gravado", consent.content);
+        assertFalse("termo não fica legível no banco", consent.sealedPackage.contains("Brasília"));
+        Base64.getDecoder().decode(consent.sealedPackage);
+        ConsentContent signed = opened(consent);
+        assertEquals("Brasília", signed.place);
+        assertTrue(signed.accepted);
+        assertEquals("Maria Silva", signed.signerName);
+        assertEquals("Paciente", signed.signerRole);
+        assertTrue(signed.termText.startsWith("Estou ciente e de acordo"));
+        assertEquals("imagem guardada junto ao aceite", (byte) 0x89, signed.signaturePng[0]);
         assertThrows("outra paciente não abre", GeneralSecurityException.class,
-                () -> SignatureVault.decrypt(consent.signatureEncrypted, saved.id + 1));
+                () -> ConsentVault.open(consent.sealedPackage, saved.id + 1));
         assertEquals("Maria Silva", saved.name);
         assertEquals("Santa Casa", saved.hospital);
         JSONObject allergies = new JSONObject(saved.historyJson).getJSONObject("allergies");
@@ -159,7 +175,7 @@ public class AppFlowTest {
         return saved;
     }
 
-    private void requiresNewSignatureWhenChanged(Intent edit, long patientId) {
+    private void requiresNewSignatureWhenChanged(Intent edit, long patientId) throws Exception {
         PatientFormActivity form = open(PatientFormActivity.class, edit);
         setField(form, "Profissão", "Dentista");
         save(form);
@@ -185,8 +201,62 @@ public class AppFlowTest {
         assertTrue(form.isFinishing());
         assertEquals("Médica", db(() -> dao.patient(patientId)).profession);
         assertEquals(2, (int) db(() -> dao.consents(patientId).size()));
-        assertTrue(db(() -> dao.latestConsent(patientId)).termText
+        assertTrue(opened(db(() -> dao.latestConsent(patientId))).termText
                 .contains("Profissão: (vazio) → Médica"));
+    }
+
+    private void registersMinor() throws Exception {
+        PatientFormActivity form = open(PatientFormActivity.class, new Intent());
+        setField(form, "Nome *", "Ana Souza");
+        pickDate(form, "Data de nascimento *", Calendar.getInstance().get(Calendar.YEAR) - 10,
+                Calendar.JANUARY, 10);
+        assertTrue(hasText(root(form), "Menor de idade"));
+        assertTrue(field(root(form), "Nome do responsável *").isShown());
+        assertTrue(hasText(root(form), "Assinatura do(a) responsável legal"));
+        save(form);
+        assertFalse("menor sem responsável não salva", form.isFinishing());
+
+        setField(form, "Nome do responsável *", "Carla Souza");
+        setField(form, "CPF do responsável *", "111.111.111-11");
+        setField(form, "Parentesco *", "Mãe");
+        assertTrue(hasText(root(form), "Carla Souza"));
+        assertTrue(hasText(root(form), "mãe e responsável legal por Ana Souza, menor de idade"));
+        first(root(form), MaterialCheckBox.class).setChecked(true);
+        SignatureView signature = first(root(form), SignatureView.class);
+        stroke(signature, MotionEvent.TOOL_TYPE_STYLUS);
+        save(form);
+        assertFalse("CPF inválido não salva", form.isFinishing());
+
+        setField(form, "CPF do responsável *", "529.982.247-25");
+        assertTrue("termo mudou, assinatura antiga é descartada", signature.isEmpty());
+        assertFalse(first(root(form), MaterialCheckBox.class).isChecked());
+        screenshot(form, "termo-menor");
+        first(root(form), MaterialCheckBox.class).setChecked(true);
+        stroke(signature, MotionEvent.TOOL_TYPE_STYLUS);
+        save(form);
+        assertTrue(form.isFinishing());
+
+        Patient minor = db(() -> dao.searchPatients("Ana Souza").get(0));
+        assertEquals("52998224725", minor.guardianCpf);
+        assertEquals("Mãe", minor.guardianRelationship);
+        ConsentContent signed = opened(db(() -> dao.latestConsent(minor.id)));
+        assertEquals("Carla Souza", signed.signerName);
+        assertEquals("Responsável legal (Mãe)", signed.signerRole);
+        assertEquals("52998224725", signed.signerCpf);
+        assertTrue(signed.termText.contains("CPF 529.982.247-25"));
+    }
+
+    private static ConsentContent opened(Consent consent) throws Exception {
+        return ConsentContent.fromJson(ConsentVault.open(consent.sealedPackage, consent.patientId));
+    }
+
+    private void pickDate(Activity activity, String label, int year, int month, int day) {
+        field(root(activity), label).getEditText().performClick();
+        settle();
+        DatePickerDialog dialog = (DatePickerDialog) ShadowDialog.getLatestDialog();
+        dialog.updateDate(year, month, day);
+        dialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+        settle();
     }
 
     private static void stroke(SignatureView view, int toolType) {

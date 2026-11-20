@@ -6,7 +6,10 @@ import androidx.room.Ignore;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-/** Termo assinado; guarda o texto exato que a paciente aceitou. */
+/**
+ * Termo assinado. Fora a data, que serve para ordenar o histórico, tudo fica dentro do
+ * pacote criptografado: texto aceito, quem assinou e a imagem da assinatura.
+ */
 @Entity(tableName = "consents",
         foreignKeys = @ForeignKey(entity = Patient.class, parentColumns = "id",
                 childColumns = "patientId", onDelete = ForeignKey.CASCADE),
@@ -17,13 +20,11 @@ public class Consent {
 
     public long patientId;
     public long signedAt;
-    public String place;
-    public String termText;
 
-    /** Imagem criptografada pelo {@link SignatureVault}. */
-    public byte[] signatureEncrypted;
+    /** {@link ConsentContent} criptografado pelo {@link ConsentVault}, em Base64. */
+    public String sealedPackage;
 
-    /** Imagem original; só existe em memória até a ficha ser salva. */
+    /** Conteúdo aberto; só existe em memória até a ficha ser salva. */
     @Ignore
-    public byte[] signaturePng;
+    public ConsentContent content;
 }

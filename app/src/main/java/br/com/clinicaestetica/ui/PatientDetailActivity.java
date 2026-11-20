@@ -14,6 +14,7 @@ import java.util.List;
 import br.com.clinicaestetica.data.AppointmentRow;
 import br.com.clinicaestetica.data.Async;
 import br.com.clinicaestetica.data.Consent;
+import br.com.clinicaestetica.data.Cpf;
 import br.com.clinicaestetica.data.FormCatalog;
 import br.com.clinicaestetica.data.Json;
 import br.com.clinicaestetica.data.Patient;
@@ -121,6 +122,14 @@ public class PatientDetailActivity extends ScreenActivity {
         info("E-mail", patient.email);
         info("Indicação", patient.referral);
         info("Motivo da visita", patient.visitReason);
+
+        if (patient.guardianName != null && !patient.guardianName.isEmpty()) {
+            Ui.section(content, "Responsável legal");
+            info("Nome", patient.guardianName);
+            info("CPF", Cpf.format(patient.guardianCpf));
+            info("Parentesco", patient.guardianRelationship);
+            info("Telefone", patient.guardianPhone);
+        }
 
         Ui.section(content, "Em caso de emergência");
         info("Avisar", join(patient.emergencyName, patient.emergencyPhone));
