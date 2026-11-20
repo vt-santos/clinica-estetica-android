@@ -13,6 +13,7 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         app:labelVisibilityMode="labeled"
+        app:headerLayout="@layout/rail_header"
         app:menu="@menu/main_nav"
         app:menuGravity="top" />
 

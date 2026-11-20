@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Marca no topo do menu lateral. O FrameLayout segura o tamanho, que o menu ignora. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="16dp"
+    android:paddingBottom="20dp">
+
+    <ImageView
+        android:layout_width="36dp"
+        android:layout_height="28dp"
+        android:layout_gravity="center_horizontal"
+        android:contentDescription="@string/app_name"
+        android:scaleType="fitCenter"
+        android:src="@drawable/logo_m"
+        android:tint="@color/ink" />
+</FrameLayout>

@@ -20,6 +20,7 @@
     <color name="accent_soft">#F6E5DB</color>
     <color name="surface">@color/paper</color>
     <color name="primary">@color/ink</color>
+    <color name="logo_background">#333333</color>
 
     <style name="Theme.Clinica" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/ink</item>
