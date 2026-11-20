@@ -46,6 +46,20 @@ final class Fmt {
         return calendar.getTimeInMillis();
     }
 
+    static long startOfMonth(long millis) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(startOfDay(millis));
+        calendar.set(Calendar.DAY_OF_MONTH, 1);
+        return calendar.getTimeInMillis();
+    }
+
+    static long plusMonths(long millis, int months) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(millis);
+        calendar.add(Calendar.MONTH, months);
+        return calendar.getTimeInMillis();
+    }
+
     static int age(long birthDate) {
         LocalDate birth = Instant.ofEpochMilli(birthDate).atZone(ZoneId.systemDefault()).toLocalDate();
         return Period.between(birth, LocalDate.now()).getYears();

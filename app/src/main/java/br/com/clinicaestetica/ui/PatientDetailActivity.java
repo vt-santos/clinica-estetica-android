@@ -24,7 +24,7 @@ import br.com.clinicaestetica.data.TreatmentSession;
 
 /** Prontuário da paciente: ficha, avaliações, sessões, consultas e pagamentos. */
 public class PatientDetailActivity extends ScreenActivity {
-    static final String EXTRA_PATIENT_ID = "patient_id";
+    public static final String EXTRA_PATIENT_ID = "patient_id";
 
     private static final int TAB_RECORD = 0;
     private static final int TAB_ASSESSMENTS = 1;
@@ -232,7 +232,7 @@ public class PatientDetailActivity extends ScreenActivity {
             startActivity(intent);
         });
         for (AppointmentRow row : rows) {
-            Cards.appointment(content, row, this::refresh);
+            Cards.appointment(content, row);
         }
     }
 
@@ -244,7 +244,7 @@ public class PatientDetailActivity extends ScreenActivity {
             startActivity(intent);
         });
         for (PaymentRow row : rows) {
-            Cards.payment(content, row, this::refresh);
+            Cards.payment(content, row);
         }
     }
 }

@@ -87,6 +87,11 @@ public final class FormCatalog {
 
     public static final int ADULT_AGE = 18;
 
+    /** Dias depois da consulta para lembrar a proprietária de chamar a cliente de volta. */
+    public static final int FOLLOW_UP_DAYS = 28;
+    /** Hora do dia em que esse aviso aparece. */
+    public static final int FOLLOW_UP_HOUR = 9;
+
     public static final String[] GUARDIAN_RELATIONSHIPS = {
             "Mãe", "Pai", "Avó", "Avô", "Tutor(a) legal", "Outro",
     };

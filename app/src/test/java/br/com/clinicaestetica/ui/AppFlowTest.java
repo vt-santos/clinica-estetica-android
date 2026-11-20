@@ -100,7 +100,8 @@ public class AppFlowTest {
         registersSession(patient.id);
         long appointmentId = schedulesAppointment(patient.id);
         firesReminder(appointmentId);
-        registersPendingPayment(patient.id);
+        concludesAppointmentWithPayment(appointmentId);
+        registersPayment(patient.id);
         showsPatientRecord(patient.id);
         showsMainSections();
         registersMinor();
@@ -339,19 +340,75 @@ public class AppFlowTest {
         assertEquals(1, shadowOf(notifications).size());
     }
 
-    private void registersPendingPayment(long patientId) {
+    /** Concluir abre o pagamento; sem pagamento salvo a consulta continua em aberto. */
+    private void concludesAppointmentWithPayment(long appointmentId) {
+        Intent intent = new Intent()
+                .putExtra(PaymentFormActivity.EXTRA_APPOINTMENT_ID, appointmentId);
+        PaymentFormActivity form = open(PaymentFormActivity.class, intent);
+        assertEquals("Concluir consulta", form.toolbar.getTitle().toString());
+        assertEquals("Consulta", field(root(form), "Descrição").getEditText().getText().toString());
+        save(form);
+        assertFalse("pagamento é obrigatório", form.isFinishing());
+        assertFalse(db(() -> dao.appointment(appointmentId)).done);
+
+        setField(form, "Valor (R$) *", "200");
+        screenshot(form, "concluir");
+        save(form);
+        assertTrue(form.isFinishing());
+        Appointment done = db(() -> dao.appointment(appointmentId));
+        assertTrue(done.done);
+        Payment paid = db(() -> dao.allPayments().get(0)).payment;
+        assertEquals(20000, paid.amountCents);
+        assertTrue(paid.paid);
+        assertEquals("Consulta", paid.description);
+
+        // O lembrete da consulta sai e entra o aviso de retorno, 28 dias depois às 9h.
+        AlarmManager alarms = app.getSystemService(AlarmManager.class);
+        assertEquals(1, shadowOf(alarms).getScheduledAlarms().size());
+        long followUp = br.com.clinicaestetica.reminder.ReminderScheduler.followUpAt(done.startsAt);
+        assertEquals(followUp, shadowOf(alarms).getScheduledAlarms().get(0).getTriggerAtMs());
+        Calendar expected = Calendar.getInstance();
+        expected.setTimeInMillis(done.startsAt);
+        expected.add(Calendar.DAY_OF_MONTH, 28);
+        Calendar actual = Calendar.getInstance();
+        actual.setTimeInMillis(followUp);
+        assertEquals(expected.get(Calendar.DAY_OF_YEAR), actual.get(Calendar.DAY_OF_YEAR));
+        assertEquals(9, actual.get(Calendar.HOUR_OF_DAY));
+
+        app.sendBroadcast(new Intent(app, br.com.clinicaestetica.reminder.FollowUpReceiver.class)
+                .putExtra("appointment_id", appointmentId));
+        settle();
+        NotificationManager notifications = app.getSystemService(NotificationManager.class);
+        android.app.Notification notice = null;
+        for (android.app.Notification each : shadowOf(notifications).getAllNotifications()) {
+            if (String.valueOf(each.extras.getCharSequence(android.app.Notification.EXTRA_TITLE))
+                    .contains("Enviar mensagem")) {
+                notice = each;
+            }
+        }
+        assertNotNull("aviso de retorno", notice);
+        assertEquals("Enviar mensagem para Maria Silva",
+                notice.extras.getCharSequence(android.app.Notification.EXTRA_TITLE).toString());
+        assertTrue(notice.extras.getCharSequence(android.app.Notification.EXTRA_TEXT).toString()
+                .startsWith("Consulta de "));
+        assertEquals(2, notice.actions.length);
+    }
+
+    /** Pagamento avulso: entra sempre como pago, sem opção de fiado. */
+    private void registersPayment(long patientId) {
         Intent intent = new Intent().putExtra(PaymentFormActivity.EXTRA_PATIENT_ID, patientId);
         PaymentFormActivity form = open(PaymentFormActivity.class, intent);
+        assertNull(first(root(form),
+                com.google.android.material.materialswitch.MaterialSwitch.class));
         setField(form, "Valor (R$) *", "1.500,50");
-        com.google.android.material.materialswitch.MaterialSwitch paid =
-                first(root(form), com.google.android.material.materialswitch.MaterialSwitch.class);
-        paid.setChecked(false);
         screenshot(form, "pagamento");
         save(form);
 
         Payment saved = db(() -> dao.allPayments().get(0)).payment;
         assertEquals(150050, saved.amountCents);
-        assertEquals(150050L, (long) db(() -> dao.pendingCents()));
+        assertTrue(saved.paid);
+        long month = Fmt.startOfMonth(System.currentTimeMillis());
+        assertEquals(170050L, (long) db(() -> dao.receivedCents(month, Fmt.plusMonths(month, 1))));
     }
 
     private void showsPatientRecord(long patientId) {
@@ -361,7 +418,7 @@ public class AppFlowTest {
         screenshot(detail, "prontuario");
 
         TabLayout tabs = first(root(detail), TabLayout.class);
-        String[] expected = {"Dipirona", "Cloasma", "Limpeza de pele", "Maria Silva", "pendente"};
+        String[] expected = {"Dipirona", "Cloasma", "Limpeza de pele", "Maria Silva", "1.500,50"};
         for (int i = 0; i < expected.length; i++) {
             tabs.selectTab(tabs.getTabAt(i));
             settle();
@@ -375,9 +432,22 @@ public class AppFlowTest {
         assertTrue(hasText(window, "R$"));
         screenshot(main, "inicio");
 
+        // Os cartões do Início levam à seção certa.
         NavigationRailView rail = main.findViewById(R.id.rail);
-        rail.setSelectedItemId(R.id.nav_patients);
+        assertTrue(clickCard(main.findViewById(R.id.container), "Recebido no mês"));
         settle();
+        assertEquals(R.id.nav_payments, rail.getSelectedItemId());
+        assertTrue(hasText(window, "Recebido no mês: "));
+        rail.setSelectedItemId(R.id.nav_home);
+        settle();
+        assertTrue(clickCard(main.findViewById(R.id.container), "Consultas hoje"));
+        settle();
+        assertEquals(R.id.nav_agenda, rail.getSelectedItemId());
+        rail.setSelectedItemId(R.id.nav_home);
+        settle();
+        assertTrue(clickCard(main.findViewById(R.id.container), "Pacientes"));
+        settle();
+        assertEquals(R.id.nav_patients, rail.getSelectedItemId());
         assertTrue(hasText(window, "Maria Silva"));
         setField(main, "Pesquisar por nome ou celular", "ninguem");
         settle();
@@ -395,9 +465,7 @@ public class AppFlowTest {
         rail.setSelectedItemId(R.id.nav_payments);
         settle();
         screenshot(main, "pagamentos");
-        click(window, "Marcar como pago");
-        settle();
-        assertEquals(0L, (long) db(() -> dao.pendingCents()));
+        assertFalse(hasText(window, "Marcar como pago"));
     }
 
     private static <T> T db(Callable<T> query) {
@@ -524,14 +592,23 @@ public class AppFlowTest {
         return false;
     }
 
-    private static boolean click(View view, String text) {
+    /** Toca no cartão (o primeiro ancestral clicável) que contém o texto. */
+    private static boolean clickCard(View view, String text) {
         if (view instanceof TextView && text.contentEquals(((TextView) view).getText())) {
-            return view.performClick();
+            for (View parent = view; parent != null; parent = (View) parent.getParent()) {
+                if (parent.isClickable()) {
+                    return parent.performClick();
+                }
+                if (!(parent.getParent() instanceof View)) {
+                    break;
+                }
+            }
+            return false;
         }
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
             for (int i = 0; i < group.getChildCount(); i++) {
-                if (click(group.getChildAt(i), text)) {
+                if (clickCard(group.getChildAt(i), text)) {
                     return true;
                 }
             }

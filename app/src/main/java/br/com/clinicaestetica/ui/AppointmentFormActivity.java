@@ -131,6 +131,7 @@ public class AppointmentFormActivity extends ScreenActivity {
             }
         }, () -> {
             ReminderScheduler.schedule(this, appointment);
+            ReminderScheduler.scheduleFollowUp(this, appointment);
             finish();
         });
     }

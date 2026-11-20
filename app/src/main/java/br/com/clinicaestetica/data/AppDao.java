@@ -115,6 +115,18 @@ public interface AppDao {
     @Query("SELECT * FROM appointments WHERE startsAt >= :from AND done = 0")
     List<Appointment> pendingAppointments(long from);
 
+    /** Consultas concluídas a partir de uma data; usadas para recriar os avisos de retorno. */
+    @Query("SELECT * FROM appointments WHERE done = 1 AND startsAt >= :from")
+    List<Appointment> doneAppointmentsSince(long from);
+
+    /** Concluir a consulta e registrar o pagamento acontecem juntos, ou nenhum dos dois. */
+    @Transaction
+    default void completeAppointment(Appointment appointment, Payment payment) {
+        payment.id = insert(payment);
+        appointment.done = true;
+        update(appointment);
+    }
+
     @Query(APPOINTMENT_ROW + "WHERE a.id = :id")
     AppointmentRow appointmentRow(long id);
 
@@ -142,12 +154,13 @@ public interface AppDao {
     @Query("SELECT * FROM payments WHERE id = :id")
     Payment payment(long id);
 
-    @Query(PAYMENT_ROW + "ORDER BY pay.paid, pay.date DESC")
+    @Query(PAYMENT_ROW + "ORDER BY pay.date DESC")
     List<PaymentRow> allPayments();
 
     @Query(PAYMENT_ROW + "WHERE pay.patientId = :patientId ORDER BY pay.date DESC")
     List<PaymentRow> paymentsOf(long patientId);
 
-    @Query("SELECT COALESCE(SUM(amountCents), 0) FROM payments WHERE paid = 0")
-    long pendingCents();
+    @Query("SELECT COALESCE(SUM(amountCents), 0) FROM payments "
+            + "WHERE paid = 1 AND date >= :from AND date < :to")
+    long receivedCents(long from, long to);
 }

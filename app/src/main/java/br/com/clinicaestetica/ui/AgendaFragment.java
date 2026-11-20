@@ -60,7 +60,7 @@ public class AgendaFragment extends ScreenFragment {
             Ui.muted(list, "Nenhuma consulta neste dia.");
         }
         for (AppointmentRow row : rows) {
-            Cards.appointment(list, row, this::refresh);
+            Cards.appointment(list, row);
         }
     }
 }

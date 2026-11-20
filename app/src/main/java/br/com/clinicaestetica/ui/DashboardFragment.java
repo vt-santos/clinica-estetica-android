@@ -28,7 +28,7 @@ public class DashboardFragment extends ScreenFragment {
     private static class Summary {
         int patients;
         int returns;
-        long pendingCents;
+        long receivedCents;
         List<AppointmentRow> today;
     }
 
@@ -49,7 +49,8 @@ public class DashboardFragment extends ScreenFragment {
             Summary summary = new Summary();
             summary.patients = dao.patientCount();
             summary.returns = dao.returnCount(start, Fmt.plusDays(start, RETURN_WINDOW_DAYS));
-            summary.pendingCents = dao.pendingCents();
+            long month = Fmt.startOfMonth(start);
+            summary.receivedCents = dao.receivedCents(month, Fmt.plusMonths(month, 1));
             summary.today = dao.appointmentsBetween(start, Fmt.plusDays(start, 1));
             return summary;
         }, this::render);
@@ -65,22 +66,28 @@ public class DashboardFragment extends ScreenFragment {
             return;
         }
         stats.removeAllViews();
-        stat("Pacientes", String.valueOf(summary.patients), R.color.peach);
-        stat("Consultas hoje", String.valueOf(summary.today.size()), R.color.sand);
-        stat("Retornos em 7 dias", String.valueOf(summary.returns), R.color.sage);
-        stat("A receber", Fmt.money(summary.pendingCents), R.color.slate);
+        stat("Pacientes", String.valueOf(summary.patients), R.color.peach, R.id.nav_patients);
+        stat("Consultas hoje", String.valueOf(summary.today.size()), R.color.sand,
+                R.id.nav_agenda);
+        stat("Retornos em 7 dias", String.valueOf(summary.returns), R.color.sage,
+                R.id.nav_agenda);
+        stat("Recebido no mês", Fmt.money(summary.receivedCents), R.color.slate,
+                R.id.nav_payments);
 
         today.removeAllViews();
         if (summary.today.isEmpty()) {
             Ui.muted(today, "Nenhuma consulta para hoje.");
         }
         for (AppointmentRow row : summary.today) {
-            Cards.appointment(today, row, this::refresh);
+            Cards.appointment(today, row);
         }
     }
 
-    /** Cartão branco com um ponto da paleta, o rótulo e o número em destaque. */
-    private void stat(String label, String value, int color) {
+    /**
+     * Cartão branco com um ponto da paleta, o rótulo e o número em destaque. Tocar nele
+     * abre a seção do menu lateral correspondente.
+     */
+    private void stat(String label, String value, int color, int section) {
         MaterialCardView card = new MaterialCardView(requireContext(), null,
                 com.google.android.material.R.attr.materialCardViewOutlinedStyle);
         LinearLayout body = Ui.column(requireContext());
@@ -107,6 +114,7 @@ public class DashboardFragment extends ScreenFragment {
         TextView number = Ui.text(body, value, 30);
         number.setTypeface(Ui.serif());
         number.setPadding(0, Ui.dp(requireContext(), 8), 0, 0);
+        card.setOnClickListener(view -> ((MainActivity) requireActivity()).open(section));
         Ui.addWeighted(stats, card);
     }
 }

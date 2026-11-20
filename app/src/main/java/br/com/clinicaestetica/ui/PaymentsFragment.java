@@ -10,13 +10,13 @@ import br.com.clinicaestetica.data.Async;
 import br.com.clinicaestetica.data.PaymentRow;
 
 public class PaymentsFragment extends ScreenFragment {
-    private TextView pending;
+    private TextView received;
     private LinearLayout list;
 
     @Override
     protected void build() {
         Ui.title(column, "Pagamentos");
-        pending = Ui.text(column, "", 16);
+        received = Ui.text(column, "", 16);
         Ui.button(column, "Novo pagamento", view ->
                 startActivity(new Intent(requireContext(), PaymentFormActivity.class)));
         list = Ui.column(requireContext());
@@ -26,7 +26,9 @@ public class PaymentsFragment extends ScreenFragment {
     @Override
     protected void refresh() {
         Async.load(() -> {
-            Object[] result = {dao.pendingCents(), dao.allPayments()};
+            long month = Fmt.startOfMonth(System.currentTimeMillis());
+            Object[] result = {dao.receivedCents(month, Fmt.plusMonths(month, 1)),
+                    dao.allPayments()};
             return result;
         }, result -> {
             @SuppressWarnings("unchecked")
@@ -35,17 +37,17 @@ public class PaymentsFragment extends ScreenFragment {
         });
     }
 
-    private void render(long pendingCents, List<PaymentRow> rows) {
+    private void render(long receivedCents, List<PaymentRow> rows) {
         if (!isAdded()) {
             return;
         }
-        pending.setText("A receber: " + Fmt.money(pendingCents));
+        received.setText("Recebido no mês: " + Fmt.money(receivedCents));
         list.removeAllViews();
         if (rows.isEmpty()) {
             Ui.muted(list, "Nenhum pagamento registrado.");
         }
         for (PaymentRow row : rows) {
-            Cards.payment(list, row, this::refresh);
+            Cards.payment(list, row);
         }
     }
 }

@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.provider.CalendarContract;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -15,8 +14,6 @@ import org.json.JSONException;
 
 import java.security.GeneralSecurityException;
 
-import br.com.clinicaestetica.data.AppDao;
-import br.com.clinicaestetica.data.AppDatabase;
 import br.com.clinicaestetica.data.Appointment;
 import br.com.clinicaestetica.data.AppointmentRow;
 import br.com.clinicaestetica.data.Async;
@@ -25,7 +22,7 @@ import br.com.clinicaestetica.data.ConsentContent;
 import br.com.clinicaestetica.data.ConsentVault;
 import br.com.clinicaestetica.data.Payment;
 import br.com.clinicaestetica.data.PaymentRow;
-import br.com.clinicaestetica.reminder.ReminderScheduler;
+import br.com.clinicaestetica.reminder.WhatsApp;
 
 /** Cartões de consulta e pagamento, compartilhados entre as telas. */
 final class Cards {
@@ -35,7 +32,7 @@ final class Cards {
     private Cards() {
     }
 
-    static void appointment(ViewGroup parent, AppointmentRow row, Runnable onChange) {
+    static void appointment(ViewGroup parent, AppointmentRow row) {
         Context context = parent.getContext();
         Appointment appointment = row.appointment;
         String title = Fmt.dateTime(appointment.startsAt) + " · " + appointment.type
@@ -55,11 +52,11 @@ final class Cards {
         if (!empty(row.cellPhone)) {
             Ui.action(actions, "WhatsApp", view -> openWhatsApp(context, row));
         }
+        // Concluir exige registrar o pagamento: a consulta só fica concluída quando ele é salvo.
         Ui.action(actions, "Concluir", view -> {
-            appointment.done = true;
-            AppDao dao = AppDatabase.dao(context);
-            ReminderScheduler.cancel(context, appointment.id);
-            Async.run(() -> dao.update(appointment), onChange);
+            Intent intent = new Intent(context, PaymentFormActivity.class);
+            intent.putExtra(PaymentFormActivity.EXTRA_APPOINTMENT_ID, appointment.id);
+            context.startActivity(intent);
         });
     }
 
@@ -111,26 +108,19 @@ final class Cards {
         }
     }
 
-    static void payment(ViewGroup parent, PaymentRow row, Runnable onChange) {
+    /** Todo pagamento registrado já está pago: o app não trabalha com fiado. */
+    static void payment(ViewGroup parent, PaymentRow row) {
         Context context = parent.getContext();
         Payment payment = row.payment;
         String title = Fmt.money(payment.amountCents) + " · " + row.patientName;
         String subtitle = Fmt.date(payment.date) + " · " + payment.method
-                + " · " + (payment.paid ? "pago" : "pendente")
                 + (empty(payment.description) ? "" : "\n" + payment.description);
 
-        LinearLayout actions = Ui.card(parent, title, subtitle, view -> {
+        Ui.card(parent, title, subtitle, view -> {
             Intent intent = new Intent(context, PaymentFormActivity.class);
             intent.putExtra(PaymentFormActivity.EXTRA_PAYMENT_ID, payment.id);
             context.startActivity(intent);
         });
-        if (!payment.paid) {
-            Ui.action(actions, "Marcar como pago", view -> {
-                payment.paid = true;
-                AppDao dao = AppDatabase.dao(context);
-                Async.run(() -> dao.update(payment), onChange);
-            });
-        }
     }
 
     private static void addToCalendar(Context context, AppointmentRow row) {
@@ -145,13 +135,11 @@ final class Cards {
     }
 
     private static void openWhatsApp(Context context, AppointmentRow row) {
-        String digits = row.cellPhone.replaceAll("\\D", "");
-        String phone = digits.startsWith("55") && digits.length() >= 12 ? digits : "55" + digits;
-        String message = "Olá, " + row.patientName + "! Lembrete da sua "
+        String message = "Olá, " + WhatsApp.firstName(row.patientName) + "! Lembrete da sua "
                 + row.appointment.type.toLowerCase() + " em "
                 + Fmt.dateTime(row.appointment.startsAt) + ".";
-        Uri uri = Uri.parse("https://wa.me/" + phone + "?text=" + Uri.encode(message));
-        start(context, new Intent(Intent.ACTION_VIEW, uri), "WhatsApp não encontrado.");
+        start(context, new Intent(Intent.ACTION_VIEW, WhatsApp.link(row.cellPhone, message)),
+                "WhatsApp não encontrado.");
     }
 
     private static void start(Context context, Intent intent, String errorMessage) {
