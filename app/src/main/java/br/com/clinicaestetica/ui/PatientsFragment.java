@@ -21,7 +21,6 @@ public class PatientsFragment extends ScreenFragment {
         Ui.title(column, "Pacientes");
         Ui.button(column, "Nova paciente", view ->
                 startActivity(new Intent(requireContext(), PatientFormActivity.class)));
-        Ui.text(column, "", 8);
         search = Ui.field(column, "Pesquisar por nome ou celular", "");
         search.addTextChangedListener(new TextWatcher() {
             @Override
@@ -53,7 +52,7 @@ public class PatientsFragment extends ScreenFragment {
         }
         list.removeAllViews();
         if (patients.isEmpty()) {
-            Ui.text(list, "Nenhuma paciente encontrada.", 14);
+            Ui.muted(list, "Nenhuma paciente encontrada.");
         }
         for (Patient patient : patients) {
             Ui.card(list, patient.name, patient.cellPhone, view -> {

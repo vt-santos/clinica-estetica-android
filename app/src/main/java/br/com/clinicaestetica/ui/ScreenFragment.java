@@ -25,9 +25,7 @@ abstract class ScreenFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         dao = AppDatabase.dao(requireContext());
         ScrollView scroll = new ScrollView(requireContext());
-        column = Ui.column(requireContext());
-        int padding = Ui.dp(requireContext(), 24);
-        column.setPadding(padding, padding, padding, padding);
+        column = Ui.page(requireContext());
         scroll.addView(column);
         build();
         return scroll;

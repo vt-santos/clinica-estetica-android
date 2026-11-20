@@ -30,15 +30,14 @@ abstract class ScreenActivity extends AppCompatActivity {
         root.setFitsSystemWindows(true);
 
         toolbar = new MaterialToolbar(this);
-        toolbar.setBackgroundResource(R.color.cream);
+        toolbar.setBackgroundResource(R.color.paper);
+        toolbar.setTitleTextAppearance(this, R.style.TextAppearance_Clinica_ToolbarTitle);
         toolbar.setNavigationIcon(R.drawable.ic_arrow_back);
         toolbar.setNavigationOnClickListener(view -> finish());
         root.addView(toolbar);
 
         scroll = new ScrollView(this);
-        content = Ui.column(this);
-        int padding = Ui.dp(this, 24);
-        content.setPadding(padding, padding, padding, padding);
+        content = Ui.page(this);
         scroll.addView(content);
         root.addView(scroll, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
                 0, 1));

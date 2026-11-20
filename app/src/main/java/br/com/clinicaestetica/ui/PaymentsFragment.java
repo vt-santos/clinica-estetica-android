@@ -19,7 +19,6 @@ public class PaymentsFragment extends ScreenFragment {
         pending = Ui.text(column, "", 16);
         Ui.button(column, "Novo pagamento", view ->
                 startActivity(new Intent(requireContext(), PaymentFormActivity.class)));
-        Ui.text(column, "", 8);
         list = Ui.column(requireContext());
         column.addView(list);
     }
@@ -43,7 +42,7 @@ public class PaymentsFragment extends ScreenFragment {
         pending.setText("A receber: " + Fmt.money(pendingCents));
         list.removeAllViews();
         if (rows.isEmpty()) {
-            Ui.text(list, "Nenhum pagamento registrado.", 14);
+            Ui.muted(list, "Nenhum pagamento registrado.");
         }
         for (PaymentRow row : rows) {
             Cards.payment(list, row, this::refresh);

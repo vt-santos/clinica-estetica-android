@@ -145,7 +145,7 @@ public class PatientDetailActivity extends ScreenActivity {
 
         Ui.section(content, "Termo de responsabilidade e ciência do procedimento");
         if (consents.isEmpty()) {
-            Ui.text(content, "Termo ainda não assinado. Toque em Editar para colher a assinatura.", 15);
+            Ui.muted(content, "Termo ainda não assinado. Toque em Editar para colher a assinatura.");
             return;
         }
         Cards.consent(content, consents.get(0));
@@ -159,7 +159,7 @@ public class PatientDetailActivity extends ScreenActivity {
 
     private void info(String label, String value) {
         if (value != null && !value.isEmpty()) {
-            Ui.text(content, label + ": " + value, 15);
+            Ui.info(content, label, value);
         }
     }
 
@@ -180,7 +180,6 @@ public class PatientDetailActivity extends ScreenActivity {
             intent.putExtra(SkinAssessmentActivity.EXTRA_PATIENT_ID, patientId);
             startActivity(intent);
         });
-        Ui.text(content, "", 8);
         for (SkinAssessment assessment : assessments) {
             Ui.card(content, Fmt.date(assessment.date), summary(assessment), view -> {
                 Intent intent = new Intent(this, SkinAssessmentActivity.class);
@@ -208,7 +207,6 @@ public class PatientDetailActivity extends ScreenActivity {
             intent.putExtra(SessionFormActivity.EXTRA_PATIENT_ID, patientId);
             startActivity(intent);
         });
-        Ui.text(content, "", 8);
         int number = sessions.size();
         for (TreatmentSession session : sessions) {
             List<String> equipment = new ArrayList<>(Json.stringSet(session.equipmentJson));
@@ -233,7 +231,6 @@ public class PatientDetailActivity extends ScreenActivity {
             intent.putExtra(AppointmentFormActivity.EXTRA_PATIENT_ID, patientId);
             startActivity(intent);
         });
-        Ui.text(content, "", 8);
         for (AppointmentRow row : rows) {
             Cards.appointment(content, row, this::refresh);
         }
@@ -246,7 +243,6 @@ public class PatientDetailActivity extends ScreenActivity {
             intent.putExtra(PaymentFormActivity.EXTRA_PATIENT_ID, patientId);
             startActivity(intent);
         });
-        Ui.text(content, "", 8);
         for (PaymentRow row : rows) {
             Cards.payment(content, row, this::refresh);
         }

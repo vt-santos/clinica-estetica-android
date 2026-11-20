@@ -110,7 +110,7 @@ public class PatientFormActivity extends ScreenActivity {
         Ui.dateField(line, "Data de nascimento *", birthDate, this::onBirthDateChanged);
         sex = Ui.field(line, "Sexo", patient.sex);
         maritalStatus = Ui.field(line, "Estado civil", patient.maritalStatus);
-        ageView = Ui.text(content, "", 14);
+        ageView = Ui.muted(content, "");
         line = Ui.row(content);
         ethnicity = Ui.field(line, "Etnia", patient.ethnicity);
         profession = Ui.field(line, "Profissão", patient.profession);

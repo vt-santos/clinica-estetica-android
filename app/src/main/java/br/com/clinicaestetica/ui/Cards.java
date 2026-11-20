@@ -76,17 +76,17 @@ final class Cards {
         Ui.addWeighted(parent, box);
         Async.load(() -> open(consent), opened -> {
             if (opened == null) {
-                Ui.text(box, "Termo de " + Fmt.dateTime(consent.signedAt)
-                        + " indisponível: a chave de criptografia não está neste aparelho.", 14);
+                Ui.muted(box, "Termo de " + Fmt.dateTime(consent.signedAt)
+                        + " indisponível: a chave de criptografia não está neste aparelho.");
                 return;
             }
             ConsentContent content = opened.content;
             String place = empty(content.place) ? "" : content.place + ", ";
             Ui.text(box, content.termText, 15);
-            Ui.text(box, "Assinado por " + content.signerName + " (" + content.signerRole
-                    + ") em " + place + Fmt.dateTime(consent.signedAt), 14);
+            Ui.muted(box, "Assinado por " + content.signerName + " (" + content.signerRole
+                    + ") em " + place + Fmt.dateTime(consent.signedAt));
             if (opened.signature == null) {
-                Ui.text(box, "Imagem da assinatura não disponível.", 14);
+                Ui.muted(box, "Imagem da assinatura não disponível.");
                 return;
             }
             ImageView signature = new ImageView(context);

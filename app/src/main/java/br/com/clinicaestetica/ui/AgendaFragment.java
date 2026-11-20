@@ -25,7 +25,6 @@ public class AgendaFragment extends ScreenFragment {
             intent.putExtra(AppointmentFormActivity.EXTRA_DAY, selectedDay);
             startActivity(intent);
         });
-        Ui.text(column, "", 8);
 
         LinearLayout row = Ui.row(column);
         CalendarView calendar = new CalendarView(requireContext());
@@ -58,7 +57,7 @@ public class AgendaFragment extends ScreenFragment {
         dayTitle.setText(Fmt.date(selectedDay));
         list.removeAllViews();
         if (rows.isEmpty()) {
-            Ui.text(list, "Nenhuma consulta neste dia.", 14);
+            Ui.muted(list, "Nenhuma consulta neste dia.");
         }
         for (AppointmentRow row : rows) {
             Cards.appointment(list, row, this::refresh);
