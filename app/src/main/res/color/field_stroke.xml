@@ -2,5 +2,5 @@
 <!-- Borda dos campos: escura quando em uso, clara no resto do tempo. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:color="@color/ink" android:state_focused="true" />
-    <item android:color="@color/line_strong" />
+    <item android:color="@color/field_outline" />
 </selector>

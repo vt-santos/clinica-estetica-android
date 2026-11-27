@@ -16,7 +16,9 @@
     <color name="line">#E8E2D6</color>
     <color name="line_strong">#D6CEBF</color>
     <color name="ink">#2E3335</color>
-    <color name="muted">#6D7578</color>
+    <!-- Contraste mínimo (WCAG 2.1 AA): muted tem 5,4:1 sobre o papel; field_outline tem 3,7:1. -->
+    <color name="muted">#5F676A</color>
+    <color name="field_outline">#8C8475</color>
     <color name="accent_soft">#F6E5DB</color>
     <color name="surface">@color/paper</color>
     <color name="primary">@color/ink</color>
@@ -43,7 +45,7 @@
         <item name="colorOnSurface">@color/ink</item>
         <item name="colorOnSurfaceVariant">@color/muted</item>
         <item name="colorOnBackground">@color/ink</item>
-        <item name="colorOutline">@color/line_strong</item>
+        <item name="colorOutline">@color/field_outline</item>
         <item name="colorOutlineVariant">@color/line</item>
         <item name="android:textColorPrimary">@color/ink</item>
         <item name="android:textColorSecondary">@color/muted</item>

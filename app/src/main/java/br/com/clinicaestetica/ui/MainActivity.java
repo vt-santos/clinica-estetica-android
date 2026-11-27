@@ -32,6 +32,8 @@ public class MainActivity extends AppCompatActivity {
                 show(new AgendaFragment());
             } else if (id == R.id.nav_payments) {
                 show(new PaymentsFragment());
+            } else if (id == R.id.nav_about) {
+                show(new AboutFragment());
             } else {
                 show(new DashboardFragment());
             }

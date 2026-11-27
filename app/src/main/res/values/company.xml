@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Dados da empresa (CDC art. 31 e Decreto 7.962/2013; LGPD art. 9º e 41).
+    PREENCHER antes de entregar o app: tudo que estiver entre colchetes é um campo pendente.
+    Estes valores aparecem na tela "Sobre" e são inseridos nos textos das políticas.
+-->
+<resources>
+    <string name="company_trade_name">[Nome fantasia da clínica]</string>
+    <string name="company_legal_name">[Razão social]</string>
+    <string name="company_cnpj">[CNPJ 00.000.000/0000-00]</string>
+    <string name="company_address">[Endereço completo, cidade/UF, CEP]</string>
+    <string name="company_phone">[Telefone / WhatsApp]</string>
+    <string name="company_email">[E-mail de contato]</string>
+    <string name="company_hours">[Horário de atendimento]</string>
+    <string name="company_technical_lead">[Responsável técnico e registro no conselho]</string>
+    <!-- Encarregado pelo tratamento de dados pessoais (LGPD art. 41). Pode ser a própria dona. -->
+    <string name="company_dpo">[Nome do(a) encarregado(a) de dados]</string>
+    <string name="company_dpo_email">[E-mail do(a) encarregado(a)]</string>
+    <string name="company_city">[Cidade/UF do foro]</string>
+
+    <!-- Regras das políticas. Defina com a dona da clínica e o advogado. -->
+    <string name="policy_retention">[prazo de guarda, por exemplo 5 anos após o último atendimento]</string>
+    <string name="policy_cancel_hours">[24]</string>
+    <string name="policy_no_show">[regra para faltas sem aviso, por exemplo a sessão do pacote é considerada realizada]</string>
+    <string name="policy_refund_days">[10]</string>
+
+    <!-- Versão dos textos legais. Mude a versão sempre que um texto for alterado. -->
+    <string name="legal_version">0.1 (modelo, aguardando revisão jurídica)</string>
+    <string name="legal_updated">27/11/2026</string>
+</resources>

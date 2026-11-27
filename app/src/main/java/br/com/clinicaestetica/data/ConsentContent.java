@@ -16,6 +16,10 @@ public class ConsentContent {
     public String termText;
     public String place;
     public boolean accepted;
+    /** Consentimento específico para dados de saúde (LGPD art. 11, I). */
+    public boolean privacyAccepted;
+    /** Versão do Aviso de Privacidade que estava em vigor na assinatura. */
+    public String privacyVersion;
     public String signerName;
     public String signerRole;
     public String signerCpf;
@@ -28,6 +32,8 @@ public class ConsentContent {
                     .put("termText", termText)
                     .put("place", place)
                     .put("accepted", accepted)
+                    .put("privacyAccepted", privacyAccepted)
+                    .put("privacyVersion", privacyVersion)
                     .put("signerName", signerName)
                     .put("signerRole", signerRole)
                     .put("signerCpf", signerCpf);
@@ -46,6 +52,8 @@ public class ConsentContent {
         content.termText = json.optString("termText");
         content.place = json.optString("place");
         content.accepted = json.optBoolean("accepted");
+        content.privacyAccepted = json.optBoolean("privacyAccepted");
+        content.privacyVersion = json.optString("privacyVersion");
         content.signerName = json.optString("signerName");
         content.signerRole = json.optString("signerRole");
         content.signerCpf = json.optString("signerCpf");

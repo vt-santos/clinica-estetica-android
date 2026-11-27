@@ -18,6 +18,8 @@ Projeto feito para uma cliente real. O repositório tem só o código, sem nenhu
 - **Pagamentos**: registro e acompanhamento de valores.
 - **Termo de consentimento**: assinatura digital feita com o dedo na tela. Se a ficha mudar depois da assinatura, o app pede uma nova assinatura e mostra o que mudou.
 - **Painel inicial** com atalhos para as principais áreas.
+- **LGPD e políticas**: consentimento específico para dados de saúde no termo, aviso de privacidade, termos de uso, política de reembolso, exportação dos dados da paciente e tela Sobre com os dados da empresa. Sem internet, cookies ou analytics. Veja [docs/CONFORMIDADE.md](docs/CONFORMIDADE.md).
+- **Acessibilidade**: contraste WCAG AA, descrições para o TalkBack e uso completo por teclado físico.
 
 ## Tecnologias
 

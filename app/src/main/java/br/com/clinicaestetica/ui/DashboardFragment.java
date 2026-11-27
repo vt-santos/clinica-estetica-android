@@ -115,6 +115,10 @@ public class DashboardFragment extends ScreenFragment {
         number.setTypeface(Ui.serif());
         number.setPadding(0, Ui.dp(requireContext(), 8), 0, 0);
         card.setOnClickListener(view -> ((MainActivity) requireActivity()).open(section));
+        card.setFocusable(true);
+        // O TalkBack lê o cartão inteiro como uma frase; o ponto colorido é só enfeite.
+        card.setContentDescription(label + ": " + value);
+        dot.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         Ui.addWeighted(stats, card);
     }
 }
