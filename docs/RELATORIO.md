@@ -323,7 +323,7 @@ No tablet de verdade foram testados: cadastro, agenda, botão Calendário, notif
 1. **Backup criptografado com senha:** cópia semanal automática para uma pasta escolhida (Google Drive ou cartão SD), botão "fazer agora" e restauração em outro aparelho. Isso também resolve a chave presa ao tablet.
 2. **Senha ou biometria para abrir o app**, e senha da dona para excluir pacientes.
 3. **Banco inteiro criptografado** (SQLCipher).
-4. **Novo visual**, mais limpo e intuitivo, no estilo do app Claude.
+4. **Novo visual**, mais limpo e intuitivo.
 5. **APK de produção assinado** para entregar à cliente.
 6. **Revisão jurídica** dos termos.
 7. **Programa de consulta no notebook**, depois que o backup existir.

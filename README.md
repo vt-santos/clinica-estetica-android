@@ -48,13 +48,14 @@ As versões ficam na página de [**Releases**](https://github.com/vt-santos/clin
 
 | Tipo | Exemplo | O que significa |
 | :-- | :-- | :-- |
-| 🧪 **Beta** | `v0.4.0-beta.1` | Funções novas, ainda em teste no tablet da clínica. Aparece como *Pre-release*. |
+| 🧪 **Beta** | `v0.7.0-beta.1` | Funções novas, ainda em teste no tablet da clínica. Aparece como *Pre-release*. |
 | 🩹 **Patch** | `v0.2.2` | Correções e ajustes pequenos, sem função nova. Aparece como versão estável. |
 
 Cada release traz a data de lançamento no título, as notas da versão e, nas versões novas, o **APK de teste** para instalar no tablet. O histórico completo está no [**CHANGELOG.md**](CHANGELOG.md).
 
 | Versão | Tipo | Data | Destaque |
 | :-- | :-- | :-- | :-- |
+| [v0.7.0-beta.1](https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.7.0-beta.1) | 🧪 Beta | 27/11/2026 | Filtro do mês na Agenda com resumo de pagamentos |
 | [v0.6.0-beta.1](https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.6.0-beta.1) | 🧪 Beta | 27/11/2026 | Campo CPF/CNPJ com verificação automática |
 | [v0.5.0-beta.1](https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.5.0-beta.1) | 🧪 Beta | 27/11/2026 | LGPD, políticas e acessibilidade |
 | [v0.4.0-beta.1](https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.4.0-beta.1) | 🧪 Beta | 27/11/2026 | Pergunta de hipertensão e anamnese agrupada |

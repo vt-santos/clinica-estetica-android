@@ -4,7 +4,7 @@ Todas as mudanças do app ficam registradas aqui, da mais nova para a mais antig
 
 | Tipo | Como é a versão | Quando usamos |
 | :-- | :-- | :-- |
-| 🧪 **Beta** | `0.4.0-beta.1` | Funções novas, ainda em teste no tablet da clínica |
+| 🧪 **Beta** | `0.7.0-beta.1` | Funções novas, ainda em teste no tablet da clínica |
 | 🩹 **Patch** | `0.2.2` | Correções e ajustes pequenos, sem função nova |
 
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e as versões seguem o [Versionamento Semântico](https://semver.org/lang/pt-BR/). Cada versão abaixo vira automaticamente uma [Release no GitHub](https://github.com/vt-santos/clinica-estetica-android/releases) quando chega ao `main`.
@@ -13,12 +13,15 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 Como publicar uma versão nova:
 1. Adicione uma seção no topo, no formato "## [X.Y.Z] - AAAA-MM-DD" (patch) ou
    "## [X.Y.Z-beta.N] - AAAA-MM-DD" (beta).
+   No fim do arquivo, acrescente o link "[X.Y.Z]: .../releases/tag/vX.Y.Z" para o
+   título da versão levar à página da release.
 2. Atualize versionName e versionCode em app/build.gradle.
 3. Ao fazer o merge no main, o GitHub Actions cria a tag, a release e anexa o APK.
 A tag de cada versão aponta para o commit que acrescentou o título dela aqui. Quando a
 versão foi escrita depois (num commit de outra versão), indique o commit certo com uma
 linha "<!-- commit: abc1234 -->" logo abaixo do título.
 -->
+
 ## [0.7.0-beta.1] - 2026-11-27
 
 ### ✨ Novidades
@@ -131,9 +134,12 @@ linha "<!-- commit: abc1234 -->" logo abaixo do título.
 - Registro de pagamentos.
 - Termo de consentimento com **assinatura digital** feita na tela.
 
-[0.4.0-beta.1]: https://github.com/vt-santos/clinica-estetica-android/compare/v0.3.0-beta.1...v0.4.0-beta.1
-[0.3.0-beta.1]: https://github.com/vt-santos/clinica-estetica-android/compare/v0.2.2...v0.3.0-beta.1
-[0.2.2]: https://github.com/vt-santos/clinica-estetica-android/compare/v0.2.1...v0.2.2
-[0.2.1]: https://github.com/vt-santos/clinica-estetica-android/compare/v0.2.0-beta.1...v0.2.1
-[0.2.0-beta.1]: https://github.com/vt-santos/clinica-estetica-android/compare/v0.1.0-beta.1...v0.2.0-beta.1
+[0.7.0-beta.1]: https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.7.0-beta.1
+[0.6.0-beta.1]: https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.6.0-beta.1
+[0.5.0-beta.1]: https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.5.0-beta.1
+[0.4.0-beta.1]: https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.4.0-beta.1
+[0.3.0-beta.1]: https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.3.0-beta.1
+[0.2.2]: https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.2.2
+[0.2.1]: https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.2.1
+[0.2.0-beta.1]: https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.2.0-beta.1
 [0.1.0-beta.1]: https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.1.0-beta.1
