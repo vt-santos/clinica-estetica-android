@@ -490,7 +490,9 @@ public class AppFlowTest {
             assertTrue(expected[i], hasText(root(detail), expected[i]));
         }
 
-        String export = db(() -> PatientExport.text(dao, patientId, "Clínica"));
+        // O formato de moeda pt-BR usa espaço não separável depois de "R$".
+        String export = db(() -> PatientExport.text(dao, patientId, "Clínica"))
+                .replace('\u00A0', ' ');
         for (String text : new String[]{"Maria Silva", "Dipirona", "Cloasma", "Limpeza de pele",
                 "R$ 1.500,50", "Assinado por Maria Silva", "LGPD"}) {
             assertTrue("exportação tem " + text, export.contains(text));
@@ -549,7 +551,15 @@ public class AppFlowTest {
         assertTrue(hasText(window, "Política de Cancelamento e Reembolso"));
         screenshot(main, "sobre");
         assertTrue(clickCard(main.findViewById(R.id.container), "Aviso de Privacidade"));
-        Intent legal = lastStarted(main);
+        // A MainActivity também abre o pedido de permissão de notificações; procura a política.
+        Intent legal = null;
+        for (Intent next; (next = shadowOf(main).getNextStartedActivity()) != null; ) {
+            if (next.getComponent() != null && LegalActivity.class.getName()
+                    .equals(next.getComponent().getClassName())) {
+                legal = next;
+            }
+        }
+        assertNotNull("tela do Aviso de Privacidade", legal);
         assertEquals(LegalDocs.PRIVACY, legal.getStringExtra(LegalActivity.EXTRA_DOCUMENT));
         assertFalse(hasText(window, "Marcar como pago"));
     }
