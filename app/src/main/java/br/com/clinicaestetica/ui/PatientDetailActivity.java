@@ -19,6 +19,7 @@ import br.com.clinicaestetica.data.Cpf;
 import br.com.clinicaestetica.data.FormCatalog;
 import br.com.clinicaestetica.data.Json;
 import br.com.clinicaestetica.data.Patient;
+import br.com.clinicaestetica.data.TaxId;
 import br.com.clinicaestetica.data.PaymentRow;
 import br.com.clinicaestetica.data.SkinAssessment;
 import br.com.clinicaestetica.data.TreatmentSession;
@@ -113,6 +114,7 @@ public class PatientDetailActivity extends ScreenActivity {
         Ui.section(content, "Dados pessoais");
         info("Nascimento", patient.birthDate == 0 ? null
                 : Fmt.date(patient.birthDate) + " (" + Fmt.age(patient.birthDate) + " anos)");
+        info("CPF/CNPJ", TaxId.format(patient.taxId));
         info("Sexo", patient.sex);
         info("Estado civil", patient.maritalStatus);
         info("Etnia", patient.ethnicity);

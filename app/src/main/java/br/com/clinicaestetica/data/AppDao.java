@@ -34,8 +34,19 @@ public interface AppDao {
     List<Patient> allPatients();
 
     @Query("SELECT * FROM patients WHERE name LIKE '%' || :term || '%' "
-            + "OR cellPhone LIKE '%' || :term || '%' ORDER BY name COLLATE NOCASE")
-    List<Patient> searchPatients(String term);
+            + "OR cellPhone LIKE '%' || :term || '%' "
+            + "OR (:taxId <> '' AND taxId LIKE '%' || :taxId || '%') ORDER BY name COLLATE NOCASE")
+    List<Patient> searchPatients(String term, String taxId);
+
+    /** Busca por nome, celular ou CPF/CNPJ (com ou sem pontuação). */
+    default List<Patient> searchPatients(String term) {
+        String taxId = TaxId.clean(term);
+        return searchPatients(term, taxId.replaceAll("\\D", "").length() >= 3 ? taxId : "");
+    }
+
+    /** Outra ficha com o mesmo CPF/CNPJ, ou null. */
+    @Query("SELECT * FROM patients WHERE taxId = :taxId AND id <> :exceptId LIMIT 1")
+    Patient patientWithTaxId(String taxId, long exceptId);
 
     @Query("SELECT COUNT(*) FROM patients")
     int patientCount();

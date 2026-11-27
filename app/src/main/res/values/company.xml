@@ -25,6 +25,6 @@
     <string name="policy_refund_days">[10]</string>
 
     <!-- Versão dos textos legais. Mude a versão sempre que um texto for alterado. -->
-    <string name="legal_version">0.1 (modelo, aguardando revisão jurídica)</string>
+    <string name="legal_version">0.2 (modelo, aguardando revisão jurídica)</string>
     <string name="legal_updated">27/11/2026</string>
 </resources>

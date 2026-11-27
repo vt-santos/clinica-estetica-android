@@ -9,6 +9,7 @@ import br.com.clinicaestetica.data.Cpf;
 import br.com.clinicaestetica.data.FormCatalog;
 import br.com.clinicaestetica.data.Json;
 import br.com.clinicaestetica.data.Patient;
+import br.com.clinicaestetica.data.TaxId;
 
 /** Compara duas versões da ficha e descreve o que mudou, para constar no termo. */
 final class PatientChanges {
@@ -18,6 +19,7 @@ final class PatientChanges {
     static List<String> between(Patient before, Patient after) {
         List<String> changes = new ArrayList<>();
         compare(changes, "Nome", before.name, after.name);
+        compare(changes, "CPF/CNPJ", TaxId.format(before.taxId), TaxId.format(after.taxId));
         compare(changes, "Data de nascimento", date(before.birthDate), date(after.birthDate));
         compare(changes, "Sexo", before.sex, after.sex);
         compare(changes, "Estado civil", before.maritalStatus, after.maritalStatus);

@@ -29,6 +29,7 @@ import br.com.clinicaestetica.data.Cpf;
 import br.com.clinicaestetica.data.FormCatalog;
 import br.com.clinicaestetica.data.Json;
 import br.com.clinicaestetica.data.Patient;
+import br.com.clinicaestetica.data.TaxId;
 
 /**
  * Cadastro com todos os campos da Ficha de Anamnese Facial. A ficha só é gravada junto com
@@ -78,6 +79,7 @@ public class PatientFormActivity extends ScreenActivity {
             emergencyName, emergencyPhone, doctorName, doctorPhone, healthPlan, healthPlanCard,
             hospital, guardianName, guardianCpf, guardianPhone;
     private MaterialAutoCompleteTextView guardianRelationship;
+    private TaxIdField taxId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,7 +126,9 @@ public class PatientFormActivity extends ScreenActivity {
         cellPhone = Ui.field(line, "Celular / WhatsApp", patient.cellPhone, PHONE);
         homePhone = Ui.field(line, "Telefone residencial", patient.homePhone, PHONE);
         workPhone = Ui.field(line, "Telefone comercial", patient.workPhone, PHONE);
-        email = Ui.field(content, "E-mail", patient.email, EMAIL);
+        line = Ui.row(content);
+        taxId = new TaxIdField(line, dao, patient.id, patient.taxId);
+        email = Ui.field(line, "E-mail", patient.email, EMAIL);
         referral = Ui.field(content, "Indicação", patient.referral);
         visitReason = Ui.field(content, "Motivo da visita", patient.visitReason);
 
@@ -285,7 +289,22 @@ public class PatientFormActivity extends ScreenActivity {
             Ui.toast(this, problem);
             return;
         }
+        if (edited.taxId.isEmpty()) {
+            continueSave(edited);
+            return;
+        }
+        // Confere de novo no banco na hora de salvar: a verificação do campo pode não ter
+        // terminado ainda.
+        Async.load(() -> dao.patientWithTaxId(edited.taxId, edited.id), other -> {
+            if (other != null && TaxId.kind(edited.taxId) == TaxId.Kind.CPF) {
+                Ui.toast(this, "Este CPF já está na ficha de " + other.name + ".");
+                return;
+            }
+            continueSave(edited);
+        });
+    }
 
+    private void continueSave(Patient edited) {
         List<String> changes = changesIn(edited);
         boolean signingOpen = signing.getVisibility() == View.VISIBLE;
         if (!signingOpen && changes.isEmpty()) {
@@ -323,6 +342,10 @@ public class PatientFormActivity extends ScreenActivity {
         }
         if (edited.birthDate > System.currentTimeMillis()) {
             return "A data de nascimento está no futuro.";
+        }
+        if (!edited.taxId.isEmpty() && !TaxId.isValid(edited.taxId)) {
+            return TaxId.kind(edited.taxId) == TaxId.Kind.CPF
+                    ? "CPF inválido: confira os números." : "CNPJ inválido: confira os números.";
         }
         if (!isMinor(edited.birthDate)) {
             return null;
@@ -405,6 +428,7 @@ public class PatientFormActivity extends ScreenActivity {
         edited.id = patient.id;
         edited.createdAt = patient.createdAt;
         edited.name = Ui.value(name);
+        edited.taxId = taxId.value();
         edited.sex = Ui.value(sex);
         edited.birthDate = birthDate[0];
         edited.address = Ui.value(address);

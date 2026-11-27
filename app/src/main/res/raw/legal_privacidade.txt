@@ -6,7 +6,7 @@ Este aviso explica como {{NOME_FANTASIA}} ({{RAZAO_SOCIAL}}, CNPJ {{CNPJ}}) trat
 A controladora dos dados é {{RAZAO_SOCIAL}}, com endereço em {{ENDERECO}}. O(a) encarregado(a) pelo tratamento de dados é {{ENCARREGADO}}, que atende pelo e-mail {{EMAIL_ENCARREGADO}}.
 
 # 2. Quais dados coletamos
-Dados de identificação e contato: nome, data de nascimento, sexo, estado civil, profissão, endereço, telefones e e-mail.
+Dados de identificação e contato: nome, CPF ou CNPJ (opcional), data de nascimento, sexo, estado civil, profissão, endereço, telefones e e-mail.
 Dados para emergências: contato de emergência, médico, convênio e hospital de preferência.
 Dados de saúde (dados sensíveis): respostas da ficha de anamnese, avaliação da pele, sessões e protocolos realizados.
 Dados do responsável legal, quando a paciente é menor de idade: nome, CPF, parentesco e telefone.
@@ -24,7 +24,7 @@ Cadastro, agenda e pagamentos: execução do contrato de prestação de serviço
 Dados de menores de idade: consentimento do responsável legal, no melhor interesse da criança ou do adolescente (art. 14).
 
 # 5. Onde ficam e como protegemos
-Os dados ficam somente no tablet da clínica, no aplicativo de gestão, sem envio para servidores, nuvem ou empresas de análise. O termo assinado é criptografado (AES-256) com chave guardada no próprio aparelho. O backup automático do sistema está desligado. Apenas a equipe da clínica tem acesso ao aparelho.
+Os dados ficam somente no tablet da clínica, no aplicativo de gestão, sem envio para servidores, nuvem ou empresas de análise. A única exceção é o número de CNPJ, quando informado: ele é conferido na Receita Federal pela BrasilAPI, sem nenhum outro dado junto. O termo assinado é criptografado (AES-256) com chave guardada no próprio aparelho. O backup automático do sistema está desligado. Apenas a equipe da clínica tem acesso ao aparelho.
 
 # 6. Com quem compartilhamos
 Não compartilhamos seus dados com terceiros, exceto: quando você pede (por exemplo, um relatório para o seu médico); quando a lei ou uma autoridade exige; e quando enviamos lembretes pelo WhatsApp para o número que você informou, o que passa pelos serviços da Meta.

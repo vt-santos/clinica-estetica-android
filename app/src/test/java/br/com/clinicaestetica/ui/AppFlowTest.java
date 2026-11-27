@@ -62,6 +62,7 @@ import br.com.clinicaestetica.R;
 import br.com.clinicaestetica.data.AppDao;
 import br.com.clinicaestetica.data.AppDatabase;
 import br.com.clinicaestetica.data.Appointment;
+import br.com.clinicaestetica.data.CnpjLookup;
 import br.com.clinicaestetica.data.Consent;
 import br.com.clinicaestetica.data.ConsentContent;
 import br.com.clinicaestetica.data.ConsentVault;
@@ -69,6 +70,7 @@ import br.com.clinicaestetica.data.FormCatalog;
 import br.com.clinicaestetica.data.Patient;
 import br.com.clinicaestetica.data.Payment;
 import br.com.clinicaestetica.data.SkinAssessment;
+import br.com.clinicaestetica.data.TaxId;
 import br.com.clinicaestetica.data.TreatmentSession;
 
 /** Percorre o app de ponta a ponta com as telas reais, sem aparelho. */
@@ -85,6 +87,20 @@ public class AppFlowTest {
     @Before
     public void useSoftwareKey() {
         ConsentVault.useTestKey(new SecretKeySpec(new byte[32], "AES"));
+        // Os testes nunca acessam a internet de verdade.
+        CnpjLookup.executor = Runnable::run;
+        CnpjLookup.source = cnpj -> CnpjLookup.Result.of(CnpjLookup.Status.OFFLINE);
+    }
+
+    @Test
+    public void readsBrasilApiAnswer() {
+        CnpjLookup.Result found = CnpjLookup.parse("{\"razao_social\":\"EMPRESA X LTDA\","
+                + "\"nome_fantasia\":\"\",\"descricao_situacao_cadastral\":\"BAIXADA\"}");
+        assertEquals(CnpjLookup.Status.FOUND, found.status);
+        assertFalse("baixada não é ativa", found.isActive());
+        assertEquals("Receita: EMPRESA X LTDA · situação baixada", found.describe());
+        assertEquals(CnpjLookup.Status.ERROR, CnpjLookup.parse("<html>").status);
+        assertEquals(CnpjLookup.Status.NOT_FOUND, CnpjLookup.parse("{}").status);
     }
 
     @Test
@@ -142,16 +158,70 @@ public class AppFlowTest {
         showsPatientRecord(patient.id);
         showsMainSections();
         registersMinor();
+        checksTaxIdOfNewPatient();
     }
 
-    /** Nada de internet: sem analytics, anúncios, cookies ou conteúdo de terceiros. */
-    @Test
-    public void appCannotReachTheInternet() throws Exception {
-        String[] permissions = app.getPackageManager().getPackageInfo(app.getPackageName(),
-                android.content.pm.PackageManager.GET_PERMISSIONS).requestedPermissions;
-        for (String permission : permissions == null ? new String[0] : permissions) {
-            assertFalse(permission, permission.equals(android.Manifest.permission.INTERNET));
+    /** CPF repetido trava o cadastro; CNPJ é conferido na Receita (aqui, resposta simulada). */
+    private void checksTaxIdOfNewPatient() {
+        CnpjLookup.executor = Runnable::run;
+        CnpjLookup.source = cnpj -> "11222333000181".equals(cnpj)
+                ? new CnpjLookup.Result(CnpjLookup.Status.FOUND, "Empresa Exemplo Ltda",
+                "Exemplo", "ATIVA")
+                : CnpjLookup.Result.of(CnpjLookup.Status.NOT_FOUND);
+        try {
+            PatientFormActivity form = open(PatientFormActivity.class, new Intent());
+            setField(form, "Nome *", "Joana Lima");
+            pickDate(form, "Data de nascimento *", 1985, Calendar.JUNE, 2);
+            setField(form, TaxIdField.LABEL, "529.982.247-25");
+            settle();
+            assertEquals("CPF já cadastrado na ficha de Maria Silva",
+                    String.valueOf(field(root(form), TaxIdField.LABEL).getError()));
+            acceptTerms(form);
+            stroke(first(root(form), SignatureView.class), MotionEvent.TOOL_TYPE_STYLUS);
+            save(form);
+            assertFalse("CPF repetido não salva", form.isFinishing());
+
+            setField(form, TaxIdField.LABEL, "11222333000181");
+            settle();
+            assertEquals("11.222.333/0001-81",
+                    field(root(form), TaxIdField.LABEL).getEditText().getText().toString());
+            String helper = String.valueOf(field(root(form), TaxIdField.LABEL).getHelperText());
+            assertTrue(helper, helper.startsWith("Receita: Empresa Exemplo Ltda (Exemplo)"));
+            assertTrue(helper, helper.contains("situação ativa"));
+
+            setField(form, TaxIdField.LABEL, "12.ABC.345/01DE-35");
+            settle();
+            assertEquals("CNPJ não encontrado na Receita Federal",
+                    String.valueOf(field(root(form), TaxIdField.LABEL).getError()));
+        } finally {
+            CnpjLookup.executor = Runnable::run;
+            CnpjLookup.source = cnpj -> CnpjLookup.Result.of(CnpjLookup.Status.OFFLINE);
         }
+    }
+
+    /**
+     * Internet só para a consulta de CNPJ: nenhum outro código abre conexão, e o app não aceita
+     * tráfego sem HTTPS. Sem analytics, anúncios, cookies ou conteúdo de terceiros.
+     */
+    @Test
+    public void onlyCnpjLookupReachesTheInternet() throws Exception {
+        java.util.List<String> offenders = new java.util.ArrayList<>();
+        try (java.util.stream.Stream<java.nio.file.Path> files =
+                     java.nio.file.Files.walk(java.nio.file.Paths.get("src/main/java"))) {
+            for (java.nio.file.Path file : (Iterable<java.nio.file.Path>) files::iterator) {
+                if (!file.toString().endsWith(".java")
+                        || file.getFileName().toString().equals("CnpjLookup.java")) {
+                    continue;
+                }
+                String code = new String(java.nio.file.Files.readAllBytes(file),
+                        java.nio.charset.StandardCharsets.UTF_8);
+                if (code.matches("(?s).*(openConnection|new URL\\(|new Socket\\(|HttpClient).*")) {
+                    offenders.add(file.getFileName().toString());
+                }
+            }
+        }
+        assertTrue("só CnpjLookup acessa a rede: " + offenders, offenders.isEmpty());
+        assertTrue(CnpjLookup.BASE_URL.startsWith("https://brasilapi.com.br/"));
     }
 
     @Test
@@ -209,6 +279,18 @@ public class AppFlowTest {
         save(form);
         assertFalse("data de nascimento é obrigatória", form.isFinishing());
         pickDate(form, "Data de nascimento *", 1990, Calendar.MARCH, 15);
+        setField(form, TaxIdField.LABEL, "123.456.789-00");
+        settle();
+        assertEquals("CPF inválido: confira os números (se for CNPJ, continue)",
+                String.valueOf(field(root(form), TaxIdField.LABEL).getError()));
+        save(form);
+        assertFalse("CPF inválido não salva", form.isFinishing());
+        setField(form, TaxIdField.LABEL, "52998224725");
+        settle();
+        assertEquals("máscara aplicada", "529.982.247-25",
+                field(root(form), TaxIdField.LABEL).getEditText().getText().toString());
+        assertEquals("CPF válido ✓",
+                String.valueOf(field(root(form), TaxIdField.LABEL).getHelperText()));
         assertFalse("adulta não pede responsável", field(root(form), "Nome do responsável *").isShown());
         setField(form, "Celular / WhatsApp", "(11) 98888-7777");
         setField(form, "Motivo da visita", "Manchas no rosto");
@@ -256,6 +338,7 @@ public class AppFlowTest {
         assertThrows("outra paciente não abre", GeneralSecurityException.class,
                 () -> ConsentVault.open(consent.sealedPackage, saved.id + 1));
         assertEquals("Maria Silva", saved.name);
+        assertEquals("CPF gravado sem pontuação", "52998224725", saved.taxId);
         assertEquals("Santa Casa", saved.hospital);
         JSONObject allergies = new JSONObject(saved.historyJson).getJSONObject("allergies");
         assertEquals("S", allergies.getString("a"));

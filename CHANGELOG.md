@@ -18,6 +18,41 @@ Como publicar uma versão nova:
 A linha "commit:" só é usada nas versões antigas, para a tag apontar para o commit certo.
 -->
 
+## [0.6.0-beta.1] - 2026-11-27
+
+### ✨ Novidades
+- Campo **CPF ou CNPJ** na ficha da paciente (opcional), ao lado do e-mail.
+  - A **máscara é automática**: é só digitar os números, e o app põe pontos, barra e traço.
+  - A **verificação é automática**: assim que o número fica completo, o app confere os dígitos verificadores e mostra embaixo do campo se ele é válido.
+  - **Número repetido**: se o CPF já está na ficha de outra paciente, o app avisa e não deixa salvar. CNPJ repetido só gera aviso, porque mais de uma paciente pode usar a mesma empresa.
+  - **CNPJ na Receita Federal**: com internet, o app consulta o CNPJ na BrasilAPI e mostra a razão social, o nome fantasia e a situação (ativa, baixada, inapta…). CNPJ inexistente ou que não está ativo aparece em vermelho.
+  - Aceita o **CNPJ alfanumérico**, com letras, que a Receita começou a emitir em julho de 2026.
+- O CPF/CNPJ aparece no prontuário, na exportação de dados e na busca de pacientes.
+
+### 🛠️ Melhorias
+- O Aviso de Privacidade (versão 0.2) e a política de Cookies e Serviços de Terceiros explicam a consulta de CNPJ.
+
+### 🔒 Privacidade
+- O app passa a ter permissão de internet, usada **só** para a consulta de CNPJ, e só por HTTPS. Sai do tablet apenas o número do CNPJ, nunca dados da paciente. O **CPF nunca é consultado fora do tablet**: não existe serviço gratuito da Receita para isso, e é dado pessoal.
+- Um teste automático falha se qualquer outra parte do app abrir conexão com a internet.
+
+### 🔧 Interno
+- Banco de dados na versão 5: coluna `taxId` com índice. As fichas antigas continuam iguais, com o campo vazio.
+- Testes novos para CPF, CNPJ numérico e alfanumérico, máscara, número repetido e resposta da Receita (simulada, sem internet).
+
+## [0.5.0-beta.1] - 2026-11-27
+
+### ✨ Novidades
+- Tela **Sobre** no menu, com os dados da empresa, Aviso de Privacidade, Termos de Uso, Política de Cancelamento e Reembolso, Cookies e Declaração de Acessibilidade. Os textos são modelos e precisam de revisão jurídica.
+- **Consentimento LGPD** para dados de saúde no termo, em caixa própria e obrigatória, guardado no pacote criptografado com a versão do aviso.
+- **Exportar dados** da paciente no prontuário (LGPD art. 18).
+
+### 🛠️ Melhorias
+- **Acessibilidade (WCAG AA)**: contraste maior, descrições para o TalkBack, títulos e uso completo por teclado físico. Botões com nomes mais claros, como "Concluir e receber".
+
+### 🔧 Interno
+- Mapa dos 19 itens de conformidade em `docs/CONFORMIDADE.md`.
+
 ## [0.4.0-beta.1] - 2026-11-27
 
 ### ✨ Novidades

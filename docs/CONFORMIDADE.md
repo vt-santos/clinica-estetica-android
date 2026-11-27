@@ -4,7 +4,7 @@ Situação em 27/11/2026. Este documento acompanha a checklist de 19 itens (priv
 
 > **Importante:** os textos legais do app são **modelos**. Eles precisam ser revisados por um advogado antes do uso com pacientes. Os dados da empresa ainda estão entre colchetes em `app/src/main/res/values/company.xml`.
 
-Contexto que muda o peso de vários itens: o app roda **só no tablet da clínica, sem internet**. Quem usa é a equipe, não a paciente. Por isso, itens pensados para sites (cookies, analytics, embeds) aqui se resolvem por não existirem, e o app garante isso no build.
+Contexto que muda o peso de vários itens: o app roda **só no tablet da clínica**, e a internet é usada só para conferir CNPJ na Receita (desde a 0.6.0-beta.1). Quem usa é a equipe, não a paciente. Por isso, itens pensados para sites (cookies, analytics, embeds) aqui se resolvem por não existirem, e o app garante isso no build.
 
 ## Mapa dos 19 itens
 
@@ -17,7 +17,7 @@ Contexto que muda o peso de vários itens: o app roda **só no tablet da clínic
 | 5 | Política de reembolso | ✅ Modelo pronto (CDC arts. 20, 49 e 51) com prazos a definir | Sobre › Política de Cancelamento e Reembolso. `res/raw/legal_reembolso.txt` |
 | 6 | Consentimento do usuário | ✅ Caixa separada e obrigatória de autorização para dados de saúde (LGPD art. 11, I), registrada no termo criptografado com a versão do aviso | `PatientFormActivity`, `ConsentContent.privacyAccepted` |
 | 7 | Coletar só os dados necessários | ✅ Só nome e nascimento são obrigatórios; evento do calendário leva só "Maria S."; sem internet. ⚠️ Revisar com a dona se "Etnia" e "Telefone comercial" são mesmo necessários (etnia é dado sensível) | `Cards.shortName`, ficha |
-| 8 | Rastreamento de analytics | ✅ Não existe. A permissão de internet é removida no build e um teste falha se ela voltar | `AndroidManifest.xml`, `AppFlowTest.appCannotReachTheInternet` |
+| 8 | Rastreamento de analytics | ✅ Não existe. A internet só é usada pela consulta de CNPJ (só HTTPS, só o número do CNPJ) e um teste falha se outro código abrir conexão | `AndroidManifest.xml`, `CnpjLookup`, `AppFlowTest.onlyCnpjLookupReachesTheInternet` |
 | 9 | Embeds de terceiros | ✅ Não existem. Calendário e WhatsApp só abrem por toque da equipe e estão explicados na política | `legal_cookies.txt` |
 | 10 | Site/app acessível | ✅ Itens 11 a 14 + títulos anunciados como títulos pelo TalkBack + declaração de acessibilidade | Sobre › Acessibilidade |
 | 11 | Texto alternativo | ✅ Botão voltar, logotipo, área de assinatura (diz se está vazia ou assinada), imagem da assinatura e cartões do Início | `ScreenActivity`, `SignatureView`, `Cards`, `DashboardFragment` |
@@ -36,7 +36,7 @@ Contexto que muda o peso de vários itens: o app roda **só no tablet da clínic
 - **Textos legais em arquivos simples** (`res/raw/legal_*.txt`), com marcadores como `{{CNPJ}}` trocados pelos dados de `company.xml`. O advogado revisa o texto; a dona preenche os dados em um só lugar.
 - **Consentimento LGPD no termo**: parágrafo específico e destacado no texto assinado (versões para adulta e para responsável legal) e caixa de autorização separada e obrigatória. O pacote criptografado guarda se a caixa foi marcada e a versão do aviso.
 - **Exportar dados** no prontuário: gera uma cópia em texto de tudo o que o app guarda da paciente, inclusive os termos, para entregar quando ela pedir acesso ou portabilidade (prazo legal de 15 dias).
-- **Sem internet garantido no build**: as permissões `INTERNET` e `ACCESS_NETWORK_STATE` são removidas mesmo se uma biblioteca futura tentar incluí-las.
+- **Internet só para CNPJ**: desde a 0.6.0-beta.1, a permissão `INTERNET` existe apenas para a consulta de CNPJ na BrasilAPI (`CnpjLookup`), só por HTTPS. Sai do tablet apenas o número do CNPJ. CPF é validado só offline. Aviso de privacidade e política de cookies foram atualizados.
 - **Acessibilidade**: contraste, descrições, títulos, teclado e rótulos de botões (itens 11 a 14).
 - **Testes novos** em `AppFlowTest`: autorização LGPD obrigatória, termo com o parágrafo LGPD, exportação, tela Sobre, abertura de cada documento sem marcadores soltos, ausência de internet, teclado e descrições.
 

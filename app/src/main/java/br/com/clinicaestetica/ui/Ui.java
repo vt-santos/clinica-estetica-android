@@ -216,14 +216,20 @@ final class Ui {
      * não recebe toque nem foco, inclusive pelo leitor de tela.
      */
     static void setFieldEnabled(TextInputEditText edit, boolean enabled) {
+        TextInputLayout layout = layoutOf(edit);
+        if (layout != null) {
+            layout.setEnabled(enabled);
+        }
+        edit.setEnabled(enabled);
+    }
+
+    /** A moldura de um campo criado por {@link #field}, onde ficam a dica e o erro. */
+    static TextInputLayout layoutOf(TextInputEditText edit) {
         View parent = (View) edit.getParent();
         while (parent != null && !(parent instanceof TextInputLayout)) {
             parent = parent.getParent() instanceof View ? (View) parent.getParent() : null;
         }
-        if (parent != null) {
-            parent.setEnabled(enabled);
-        }
-        edit.setEnabled(enabled);
+        return (TextInputLayout) parent;
     }
 
     /** Chama action sempre que o texto do campo mudar. */

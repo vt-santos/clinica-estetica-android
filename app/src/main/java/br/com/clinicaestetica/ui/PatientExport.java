@@ -15,6 +15,7 @@ import br.com.clinicaestetica.data.Cpf;
 import br.com.clinicaestetica.data.FormCatalog;
 import br.com.clinicaestetica.data.Json;
 import br.com.clinicaestetica.data.Patient;
+import br.com.clinicaestetica.data.TaxId;
 import br.com.clinicaestetica.data.PaymentRow;
 import br.com.clinicaestetica.data.SkinAssessment;
 import br.com.clinicaestetica.data.TreatmentSession;
@@ -42,6 +43,7 @@ final class PatientExport {
         section(out, "Dados pessoais");
         line(out, "Nome", patient.name);
         line(out, "Nascimento", patient.birthDate == 0 ? null : Fmt.date(patient.birthDate));
+        line(out, "CPF/CNPJ", TaxId.format(patient.taxId));
         line(out, "Sexo", patient.sex);
         line(out, "Estado civil", patient.maritalStatus);
         line(out, "Etnia", patient.ethnicity);

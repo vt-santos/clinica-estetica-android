@@ -6,7 +6,7 @@
 
 **App de gestão para clínicas de estética, feito para rodar no tablet da clínica**
 
-Sem internet, sem servidor, sem mensalidade: todos os dados ficam no próprio aparelho.
+Sem servidor, sem mensalidade: todos os dados ficam no próprio aparelho. A internet só é usada para conferir CNPJ na Receita.
 
 [![Última versão estável](https://img.shields.io/github/v/release/vt-santos/clinica-estetica-android?label=patch%20est%C3%A1vel&logo=github&color=2E7D32)](https://github.com/vt-santos/clinica-estetica-android/releases/latest)
 [![Última beta](https://img.shields.io/github/v/release/vt-santos/clinica-estetica-android?include_prereleases&label=beta&logo=github&color=8E44AD)](https://github.com/vt-santos/clinica-estetica-android/releases)
@@ -15,7 +15,7 @@ Sem internet, sem servidor, sem mensalidade: todos os dados ficam no próprio ap
 ![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
 ![Room](https://img.shields.io/badge/Room-SQLite-003B57?logo=sqlite&logoColor=white)
-![Offline](https://img.shields.io/badge/100%25-offline-333333)
+![Dados no tablet](https://img.shields.io/badge/dados-s%C3%B3%20no%20tablet-333333)
 
 [Funcionalidades](#-funcionalidades) · [Versões](#-versões) · [Tecnologias](#-tecnologias) · [Como gerar o APK](#-como-gerar-o-apk)
 
@@ -28,6 +28,7 @@ Sem internet, sem servidor, sem mensalidade: todos os dados ficam no próprio ap
 | | |
 | :-- | :-- |
 | 👩 **Pacientes** | Cadastro com a Ficha de Anamnese Facial completa e histórico de cada paciente. |
+| 🪪 **CPF ou CNPJ** | Campo com máscara automática. Confere os dígitos na hora, avisa se o número já está em outra ficha e consulta o CNPJ na Receita Federal (razão social e situação). Aceita o CNPJ alfanumérico novo. |
 | 🩺 **Anamnese organizada** | Perguntas agrupadas por assunto (condições de saúde, medicamentos, saúde da mulher, hábitos, pele). O campo "Qual?" só abre quando a resposta é **Sim**. |
 | 🔍 **Avaliação da pele** | Registro de manchas, lesões, hidratação, oleosidade e espessura. |
 | 💆 **Sessões de tratamento** | Protocolos, produtos e equipamentos usados em cada sessão. |
@@ -54,6 +55,8 @@ Cada release traz a data de lançamento no título, as notas da versão e, nas v
 
 | Versão | Tipo | Data | Destaque |
 | :-- | :-- | :-- | :-- |
+| [v0.6.0-beta.1](https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.6.0-beta.1) | 🧪 Beta | 27/11/2026 | Campo CPF/CNPJ com verificação automática |
+| [v0.5.0-beta.1](https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.5.0-beta.1) | 🧪 Beta | 27/11/2026 | LGPD, políticas e acessibilidade |
 | [v0.4.0-beta.1](https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.4.0-beta.1) | 🧪 Beta | 27/11/2026 | Pergunta de hipertensão e anamnese agrupada |
 | [v0.3.0-beta.1](https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.3.0-beta.1) | 🧪 Beta | 20/11/2026 | Aviso de retorno e pagamento ao concluir |
 | [v0.2.2](https://github.com/vt-santos/clinica-estetica-android/releases/tag/v0.2.2) | 🩹 Patch | 20/11/2026 | Ícone novo com o "M" do logo |
