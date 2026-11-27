@@ -10,9 +10,9 @@ android {
         applicationId 'br.com.clinicaestetica'
         minSdk 26
         targetSdk 36
-        versionCode 8
+        versionCode 9
         // Mesma versão da última entrada do CHANGELOG.md.
-        versionName '0.6.1-beta.1'
+        versionName '0.7.0-beta.1'
     }
 
     compileOptions {

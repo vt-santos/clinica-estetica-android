@@ -43,7 +43,7 @@ final class Cards {
         } else {
             status = "";
         }
-        String title = Fmt.dateTime(appointment.startsAt) + " . " + appointment.type + status;
+        String title = Fmt.dateTime(appointment.startsAt) + " · " + appointment.type + status;
         String subtitle = row.patientName
                 + (empty(appointment.notes) ? "" : "\n" + appointment.notes);
 

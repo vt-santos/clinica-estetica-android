@@ -85,7 +85,7 @@ public class AgendaFragment extends ScreenFragment {
             dayTitle.setText(Fmt.date(selectedDay));
         }
         if (rows.isEmpty()) {
-            Ui.muted(list, monthMode ? "Nenhuma consulta neste mês" : "Nenhuma consulta neste dia.");
+            Ui.muted(list, monthMode ? "Nenhuma consulta neste mês." : "Nenhuma consulta neste dia.");
         }
         for (AppointmentRow row : rows) {
             Cards.appointment(list, row);
@@ -108,9 +108,9 @@ public class AgendaFragment extends ScreenFragment {
             }
         }
 
-        Ui.strong(list, rows.size() + " Consultas no mês", 18);
-        Ui.text(list, "Realizadas e pagas: " + paid, 16);
-        Ui.text(list, "Já realizadas e não pagas: " + unpaid, 16);
-        Ui.text(list, "Ainda por realizar: " + upcoming, 16);
+        Ui.strong(list, rows.size() + " consultas no mês", 18);
+        Ui.text(list, "realizadas e pagas: " + paid, 16);
+        Ui.text(list, "já realizadas e não pagas: " + unpaid, 16);
+        Ui.text(list, "ainda por realizar: " + upcoming, 16);
     }
 }
