@@ -15,7 +15,9 @@ Como publicar uma versão nova:
    "## [X.Y.Z-beta.N] - AAAA-MM-DD" (beta).
 2. Atualize versionName e versionCode em app/build.gradle.
 3. Ao fazer o merge no main, o GitHub Actions cria a tag, a release e anexa o APK.
-A linha "commit:" só é usada nas versões antigas, para a tag apontar para o commit certo.
+A tag de cada versão aponta para o commit que acrescentou o título dela aqui. Quando a
+versão foi escrita depois (num commit de outra versão), indique o commit certo com uma
+linha "<!-- commit: abc1234 -->" logo abaixo do título.
 -->
 
 ## [0.6.0-beta.1] - 2026-11-27
@@ -41,6 +43,7 @@ A linha "commit:" só é usada nas versões antigas, para a tag apontar para o c
 - Testes novos para CPF, CNPJ numérico e alfanumérico, máscara, número repetido e resposta da Receita (simulada, sem internet).
 
 ## [0.5.0-beta.1] - 2026-11-27
+<!-- commit: 8fca1bf -->
 
 ### ✨ Novidades
 - Tela **Sobre** no menu, com os dados da empresa, Aviso de Privacidade, Termos de Uso, Política de Cancelamento e Reembolso, Cookies e Declaração de Acessibilidade. Os textos são modelos e precisam de revisão jurídica.
@@ -54,6 +57,7 @@ A linha "commit:" só é usada nas versões antigas, para a tag apontar para o c
 - Mapa dos 19 itens de conformidade em `docs/CONFORMIDADE.md`.
 
 ## [0.4.0-beta.1] - 2026-11-27
+<!-- commit: b489481 -->
 
 ### ✨ Novidades
 - Nova pergunta na anamnese: **"Tem hipertensão (pressão alta)?"**, logo abaixo de "Tem diabetes?".
