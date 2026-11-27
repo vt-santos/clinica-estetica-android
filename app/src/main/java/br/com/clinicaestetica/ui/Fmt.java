@@ -21,6 +21,11 @@ final class Fmt {
         return new SimpleDateFormat("dd/MM/yyyy", BR).format(new Date(millis));
     }
 
+    static String month(long millis){
+        String text = new SimpleDateFormat("MMMM 'de' yyyy", BR).format(new Date(millis));
+        return Character.toUpperCase(text.charAt(0)) + text.substring(1);
+    }
+
     static String time(long millis) {
         return new SimpleDateFormat("HH:mm", BR).format(new Date(millis));
     }

@@ -12,7 +12,7 @@ android {
         targetSdk 36
         versionCode 8
         // Mesma versão da última entrada do CHANGELOG.md.
-        versionName '0.6.0-beta.1'
+        versionName '0.6.1-beta.1'
     }
 
     compileOptions {

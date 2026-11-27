@@ -18,7 +18,7 @@ Como publicar uma versão nova:
 A linha "commit:" só é usada nas versões antigas, para a tag apontar para o commit certo.
 -->
 
-## [0.6.0-beta.1] - 2026-11-27
+## [0.6.1-beta.1] - 2026-11-27
 
 ### ✨ Novidades
 - Campo **CPF ou CNPJ** na ficha da paciente (opcional), ao lado do e-mail.
@@ -28,6 +28,8 @@ A linha "commit:" só é usada nas versões antigas, para a tag apontar para o c
   - **CNPJ na Receita Federal**: com internet, o app consulta o CNPJ na BrasilAPI e mostra a razão social, o nome fantasia e a situação (ativa, baixada, inapta…). CNPJ inexistente ou que não está ativo aparece em vermelho.
   - Aceita o **CNPJ alfanumérico**, com letras, que a Receita começou a emitir em julho de 2026.
 - O CPF/CNPJ aparece no prontuário, na exportação de dados e na busca de pacientes.
+  - **Filtro do mês na Agenda**: botões **Dia** e **Mês inteiro**. No modo mês aparecem todas as consultas do mês escolhido, com um resumo no topo: total, realizadas e pagas, que já passaram sem pagamento e as que ainda vão acontecer.
+  - Cada consulta mostra se está **concluída e paga** ou **sem pagamento**, na Agenda, no Início e na ficha da paciente.
 
 ### 🛠️ Melhorias
 - O Aviso de Privacidade (versão 0.2) e a política de Cookies e Serviços de Terceiros explicam a consulta de CNPJ.
