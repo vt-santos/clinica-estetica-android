@@ -35,8 +35,15 @@ final class Cards {
     static void appointment(ViewGroup parent, AppointmentRow row) {
         Context context = parent.getContext();
         Appointment appointment = row.appointment;
-        String title = Fmt.dateTime(appointment.startsAt) + " · " + appointment.type
-                + (appointment.done ? " · concluída" : "");
+        String status;
+        if(appointment.done) {
+            status = " · concluída e paga";
+        } else if (appointment.startsAt < System.currentTimeMillis()) {
+            status = " · sem pagamento";
+        } else {
+            status = "";
+        }
+        String title = Fmt.dateTime(appointment.startsAt) + " · " + appointment.type + status;
         String subtitle = row.patientName
                 + (empty(appointment.notes) ? "" : "\n" + appointment.notes);
 

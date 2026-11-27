@@ -19,6 +19,11 @@ A tag de cada versão aponta para o commit que acrescentou o título dela aqui. 
 versão foi escrita depois (num commit de outra versão), indique o commit certo com uma
 linha "<!-- commit: abc1234 -->" logo abaixo do título.
 -->
+## [0.7.0-beta.1] - 2026-11-27
+
+### ✨ Novidades
+- **Filtro do mês na Agenda**: botões **Dia** e **Mês inteiro**. No modo mês aparecem todas as consultas do mês escolhido, com um resumo no topo: total, realizadas e pagas, que já passaram sem pagamento e as que ainda vão acontecer.
+- Cada consulta mostra se está **concluída e paga** ou **sem pagamento**, na Agenda, no Início e na ficha da paciente.
 
 ## [0.6.0-beta.1] - 2026-11-27
 
