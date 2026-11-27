@@ -19,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -131,6 +132,15 @@ final class Ui {
         return view;
     }
 
+    /** Título de um grupo dentro de uma seção, por exemplo "Condições de saúde". */
+    static TextView subsection(ViewGroup parent, String text) {
+        TextView view = text(parent, text, 16);
+        view.setTypeface(MEDIUM);
+        view.setPadding(0, dp(parent.getContext(), 14), 0, dp(parent.getContext(), 2));
+        ViewCompat.setAccessibilityHeading(view, true);
+        return view;
+    }
+
     static TextView text(ViewGroup parent, String text, int sizeSp) {
         TextView view = new TextView(parent.getContext());
         view.setText(text);
@@ -196,6 +206,21 @@ final class Ui {
         layout.addView(edit);
         addFilling(parent, layout);
         return edit;
+    }
+
+    /**
+     * Liga ou desliga um campo criado por {@link #field}. Desligado, ele fica acinzentado e
+     * não recebe toque nem foco, inclusive pelo leitor de tela.
+     */
+    static void setFieldEnabled(TextInputEditText edit, boolean enabled) {
+        View parent = (View) edit.getParent();
+        while (parent != null && !(parent instanceof TextInputLayout)) {
+            parent = parent.getParent() instanceof View ? (View) parent.getParent() : null;
+        }
+        if (parent != null) {
+            parent.setEnabled(enabled);
+        }
+        edit.setEnabled(enabled);
     }
 
     /** Chama action sempre que o texto do campo mudar. */

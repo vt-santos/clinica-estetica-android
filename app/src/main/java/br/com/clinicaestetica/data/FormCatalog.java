@@ -1,5 +1,9 @@
 package br.com.clinicaestetica.data;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /** Conteúdo das fichas em papel: perguntas, grupos de avaliação e equipamentos. */
 public final class FormCatalog {
     private FormCatalog() {
@@ -9,11 +13,37 @@ public final class FormCatalog {
         public final String key;
         public final String label;
         public final String detailLabel;
+        /**
+         * Quando true, o campo de detalhe ("Qual?", "Quais?"...) só fica disponível depois que
+         * a resposta for Sim. Campos como "Observações" valem para qualquer resposta.
+         */
+        public final boolean detailOnlyWhenYes;
 
         Question(String key, String label, String detailLabel) {
+            this(key, label, detailLabel, true);
+        }
+
+        private Question(String key, String label, String detailLabel, boolean detailOnlyWhenYes) {
             this.key = key;
             this.label = label;
             this.detailLabel = detailLabel;
+            this.detailOnlyWhenYes = detailOnlyWhenYes;
+        }
+
+        /** Pergunta cujo detalhe pode ser preenchido com qualquer resposta. */
+        static Question anyAnswer(String key, String label, String detailLabel) {
+            return new Question(key, label, detailLabel, false);
+        }
+    }
+
+    /** Perguntas do histórico agrupadas por assunto, na ordem em que aparecem na ficha. */
+    public static final class QuestionGroup {
+        public final String title;
+        public final Question[] questions;
+
+        QuestionGroup(String title, Question... questions) {
+            this.title = title;
+            this.questions = questions;
         }
     }
 
@@ -29,29 +59,50 @@ public final class FormCatalog {
         }
     }
 
-    public static final Question[] HISTORY = {
-            new Question("aesthetic_treatment", "Fez tratamento estético anterior?", "Qual?"),
-            new Question("allergies", "Antecedentes alérgicos?", "Quais?"),
-            new Question("bowel", "Funcionamento intestinal regular?", "Observações"),
-            new Question("sports", "Pratica esportes?", "Quais?"),
-            new Question("smoker", "É fumante?", null),
-            new Question("diet", "Alimentação balanceada?", "Tipo?"),
-            new Question("medical_treatment", "Faz algum tratamento médico?", "Qual?"),
-            new Question("medication", "Usa algum medicamento?", "Qual?"),
-            new Question("acids", "Usa ou já usou ácidos na pele?", "Quais?"),
-            new Question("pregnant", "É gestante?", "Filhos? Quantos?"),
-            new Question("pacemaker", "Portador de marcapasso?", "Qual?"),
-            new Question("metal_prosthesis", "Presença de próteses metálicas?", "Local?"),
-            new Question("heart", "Tem problemas cardíacos?", "Qual?"),
-            new Question("epilepsy", "Portador de epilepsia?", null),
-            new Question("oncology", "Antecedentes oncológicos?", "Qual?"),
-            new Question("menstrual", "Ciclo menstrual regular?", "Observações"),
-            new Question("contraceptive", "Usa método anticoncepcional?", "Qual?"),
-            new Question("daily_care", "Cuidados diários e produtos em uso?", "Qual?"),
-            new Question("diabetes", "Tem diabetes?", null),
-            new Question("dental_prosthesis", "Próteses dentárias?", null),
-            new Question("sun", "Costuma tomar sol?", null),
+    /*
+     * As chaves ficam iguais às de antes da reorganização, então as fichas já gravadas
+     * continuam abrindo com as mesmas respostas. Só a ordem na tela mudou.
+     */
+    public static final QuestionGroup[] HISTORY_GROUPS = {
+            new QuestionGroup("Condições de saúde",
+                    new Question("diabetes", "Tem diabetes?", null),
+                    new Question("hypertension", "Tem hipertensão (pressão alta)?", null),
+                    new Question("heart", "Tem problemas cardíacos?", "Qual?"),
+                    new Question("pacemaker", "Portador de marcapasso?", "Qual?"),
+                    new Question("epilepsy", "Portador de epilepsia?", null),
+                    new Question("oncology", "Antecedentes oncológicos?", "Qual?"),
+                    new Question("allergies", "Antecedentes alérgicos?", "Quais?")),
+            new QuestionGroup("Tratamentos, medicamentos e próteses",
+                    new Question("medical_treatment", "Faz algum tratamento médico?", "Qual?"),
+                    new Question("medication", "Usa algum medicamento?", "Qual?"),
+                    new Question("metal_prosthesis", "Presença de próteses metálicas?", "Local?"),
+                    new Question("dental_prosthesis", "Próteses dentárias?", null)),
+            new QuestionGroup("Saúde da mulher",
+                    Question.anyAnswer("pregnant", "É gestante?", "Filhos? Quantos?"),
+                    Question.anyAnswer("menstrual", "Ciclo menstrual regular?", "Observações"),
+                    new Question("contraceptive", "Usa método anticoncepcional?", "Qual?")),
+            new QuestionGroup("Hábitos de vida",
+                    new Question("smoker", "É fumante?", null),
+                    new Question("diet", "Alimentação balanceada?", "Tipo?"),
+                    Question.anyAnswer("bowel", "Funcionamento intestinal regular?", "Observações"),
+                    new Question("sports", "Pratica esportes?", "Quais?"),
+                    new Question("sun", "Costuma tomar sol?", null)),
+            new QuestionGroup("Pele e cuidados estéticos",
+                    new Question("aesthetic_treatment", "Fez tratamento estético anterior?", "Qual?"),
+                    new Question("acids", "Usa ou já usou ácidos na pele?", "Quais?"),
+                    new Question("daily_care", "Cuidados diários e produtos em uso?", "Qual?")),
     };
+
+    /** Todas as perguntas do histórico em sequência, na mesma ordem da ficha. */
+    public static final Question[] HISTORY = flatten(HISTORY_GROUPS);
+
+    private static Question[] flatten(QuestionGroup[] groups) {
+        List<Question> all = new ArrayList<>();
+        for (QuestionGroup group : groups) {
+            Collections.addAll(all, group.questions);
+        }
+        return all.toArray(new Question[0]);
+    }
 
     public static final SkinGroup[] SKIN_GROUPS = {
             new SkinGroup("Manchas pigmentares relacionadas à melanina", false,

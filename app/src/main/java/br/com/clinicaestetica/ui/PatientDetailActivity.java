@@ -139,8 +139,19 @@ public class PatientDetailActivity extends ScreenActivity {
 
         Ui.section(content, "Histórico");
         JSONObject history = Json.object(patient.historyJson);
-        for (FormCatalog.Question question : FormCatalog.HISTORY) {
-            info(question.label, PatientChanges.answer(history, question.key));
+        for (FormCatalog.QuestionGroup group : FormCatalog.HISTORY_GROUPS) {
+            boolean titled = false;
+            for (FormCatalog.Question question : group.questions) {
+                String answer = PatientChanges.answer(history, question.key);
+                if (answer.isEmpty()) {
+                    continue;
+                }
+                if (!titled) {
+                    Ui.subsection(content, group.title);
+                    titled = true;
+                }
+                info(question.label, answer);
+            }
         }
 
         Ui.section(content, "Termo de responsabilidade e ciência do procedimento");

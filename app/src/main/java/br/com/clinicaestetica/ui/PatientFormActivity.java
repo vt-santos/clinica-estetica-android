@@ -143,8 +143,11 @@ public class PatientFormActivity extends ScreenActivity {
 
         Ui.section(content, "Histórico");
         JSONObject saved = Json.object(patient.historyJson);
-        for (FormCatalog.Question question : FormCatalog.HISTORY) {
-            addQuestion(question, saved.optJSONObject(question.key));
+        for (FormCatalog.QuestionGroup group : FormCatalog.HISTORY_GROUPS) {
+            Ui.subsection(content, group.title);
+            for (FormCatalog.Question question : group.questions) {
+                addQuestion(question, saved.optJSONObject(question.key));
+            }
         }
         buildConsent();
 
@@ -211,6 +214,19 @@ public class PatientFormActivity extends ScreenActivity {
         TextInputEditText detail = question.detailLabel == null ? null
                 : Ui.field(line, question.detailLabel, saved == null ? "" : saved.optString("d"));
         answers.put(question.key, new Answer(yesNo, detail));
+        if (detail != null && question.detailOnlyWhenYes) {
+            Ui.setFieldEnabled(detail, YES_NO[0].equals(selected));
+            yesNo.setOnCheckedStateChangeListener((group, ids) -> onAnswerChanged(group, detail));
+        }
+    }
+
+    /** "Qual?" só fica disponível com a resposta Sim; com Não ou sem resposta, é limpo. */
+    private static void onAnswerChanged(ChipGroup yesNo, TextInputEditText detail) {
+        boolean yes = Ui.checked(yesNo).contains(YES_NO[0]);
+        if (!yes) {
+            detail.setText("");
+        }
+        Ui.setFieldEnabled(detail, yes);
     }
 
     private void onBirthDateChanged() {

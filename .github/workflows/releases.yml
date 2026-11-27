@@ -1,0 +1,35 @@
+name: 🚀 Releases
+
+# Cada versão nova do CHANGELOG.md vira uma tag e uma Release no GitHub:
+# 🧪 betas como pré-release e 🩹 patches como versão estável, com a data no título.
+on:
+  push:
+    branches: [main]
+    paths: [CHANGELOG.md]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency: releases
+
+jobs:
+  publicar:
+    name: Publicar versões novas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Criar tags e releases a partir do CHANGELOG
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/publish_releases.py

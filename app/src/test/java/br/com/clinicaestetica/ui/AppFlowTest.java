@@ -64,6 +64,7 @@ import br.com.clinicaestetica.data.Appointment;
 import br.com.clinicaestetica.data.Consent;
 import br.com.clinicaestetica.data.ConsentContent;
 import br.com.clinicaestetica.data.ConsentVault;
+import br.com.clinicaestetica.data.FormCatalog;
 import br.com.clinicaestetica.data.Patient;
 import br.com.clinicaestetica.data.Payment;
 import br.com.clinicaestetica.data.SkinAssessment;
@@ -91,6 +92,41 @@ public class AppFlowTest {
         assertEquals(15050, Fmt.parseCents("150,50"));
         assertEquals(150050, Fmt.parseCents("1.500,50"));
         assertEquals(-1, Fmt.parseCents("abc"));
+    }
+
+    @Test
+    public void groupsRelatedHealthQuestions() {
+        assertEquals("hipertensão logo depois de diabetes",
+                question("diabetes") + 1, question("hypertension"));
+        assertEquals("Condições de saúde", FormCatalog.HISTORY_GROUPS[0].title);
+        int total = 0;
+        for (FormCatalog.QuestionGroup group : FormCatalog.HISTORY_GROUPS) {
+            total += group.questions.length;
+        }
+        assertEquals(total, FormCatalog.HISTORY.length);
+    }
+
+    @Test
+    public void detailFieldOnlyAvailableWhenYes() {
+        PatientFormActivity form = open(PatientFormActivity.class, new Intent());
+        assertTrue(text(root(form), "Condições de saúde"));
+        assertTrue(text(root(form), "Tem hipertensão (pressão alta)?"));
+
+        TextInputLayout which = field(root(form), "Quais?");
+        assertFalse("sem resposta, Quais? fica bloqueado", which.isEnabled());
+        assertFalse(which.getEditText().isEnabled());
+
+        chip(form, "Sim", question("allergies")).setChecked(true);
+        assertTrue("Sim libera o Quais?", which.getEditText().isEnabled());
+        which.getEditText().setText("Dipirona");
+
+        chip(form, "Não", question("allergies")).setChecked(true);
+        assertFalse("Não bloqueia o Quais?", which.getEditText().isEnabled());
+        assertEquals("Não apaga o que estava escrito", "",
+                which.getEditText().getText().toString());
+
+        assertTrue("Observações vale para qualquer resposta",
+                field(root(form), "Observações").getEditText().isEnabled());
     }
 
     @Test
@@ -122,7 +158,7 @@ public class AppFlowTest {
         setField(form, "Celular / WhatsApp", "(11) 98888-7777");
         setField(form, "Motivo da visita", "Manchas no rosto");
         setField(form, "Hospital", "Santa Casa");
-        chip(form, "Sim", 1).setChecked(true);
+        chip(form, "Sim", question("allergies")).setChecked(true);
         setField(form, "Quais?", "Dipirona");
         screenshot(form, "cadastro");
 
@@ -165,7 +201,7 @@ public class AppFlowTest {
 
         Intent edit = new Intent().putExtra(PatientFormActivity.EXTRA_PATIENT_ID, saved.id);
         PatientFormActivity reopened = open(PatientFormActivity.class, edit);
-        assertTrue(chip(reopened, "Sim", 1).isChecked());
+        assertTrue(chip(reopened, "Sim", question("allergies")).isChecked());
         save(reopened);
         assertTrue("ficha assinada salva sem nova assinatura", reopened.isFinishing());
         assertEquals("Dipirona", new JSONObject(db(() -> dao.patient(saved.id)).historyJson)
@@ -532,6 +568,31 @@ public class AppFlowTest {
             }
         }
         return null;
+    }
+
+    /** Posição da pergunta na ficha, que é também a ordem dos chips Sim/Não na tela. */
+    private static int question(String key) {
+        for (int i = 0; i < FormCatalog.HISTORY.length; i++) {
+            if (FormCatalog.HISTORY[i].key.equals(key)) {
+                return i;
+            }
+        }
+        throw new AssertionError(key);
+    }
+
+    private static boolean text(View view, String text) {
+        if (view instanceof TextView && text.contentEquals(((TextView) view).getText())) {
+            return true;
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                if (text(group.getChildAt(i), text)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static Chip chip(Activity activity, String text, int skip) {
