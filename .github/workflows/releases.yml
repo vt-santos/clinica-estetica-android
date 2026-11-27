@@ -5,7 +5,10 @@ name: 🚀 Releases
 on:
   push:
     branches: [main]
-    paths: [CHANGELOG.md]
+    paths:
+      - CHANGELOG.md
+      - .github/scripts/publish_releases.py
+      - .github/workflows/releases.yml
   workflow_dispatch:
 
 permissions:
