@@ -37,9 +37,9 @@ final class Cards {
         Appointment appointment = row.appointment;
         String status;
         if(appointment.done) {
-            status = " . concluída e paga";
+            status = " · concluída e paga";
         } else if (appointment.startsAt < System.currentTimeMillis()) {
-            status = " . sem pagamento";
+            status = " · sem pagamento";
         } else {
             status = "";
         }
