@@ -2,8 +2,12 @@ plugins {
     id 'com.android.application' version '9.5.0' apply false
 }
 
-// O OneDrive trava arquivos durante a sincronização, então o build fica fora dele.
-def buildRoot = "${System.getenv('LOCALAPPDATA')}/ClinicaEstetica/build"
-allprojects { project ->
-    project.layout.buildDirectory.set(file("$buildRoot/${project.name}"))
+// O OneDrive trava arquivos durante a sincronização, então no Windows o build fica fora dele.
+// Em outros sistemas (como o GitHub Actions) o build fica na pasta padrão.
+def localAppData = System.getenv('LOCALAPPDATA')
+if (localAppData) {
+    def buildRoot = "$localAppData/ClinicaEstetica/build"
+    allprojects { project ->
+        project.layout.buildDirectory.set(file("$buildRoot/${project.name}"))
+    }
 }

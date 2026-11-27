@@ -48,12 +48,12 @@ final class Cards {
         if (appointment.done) {
             return;
         }
-        Ui.action(actions, "Calendário", view -> addToCalendar(context, row));
+        Ui.action(actions, "Pôr no calendário", view -> addToCalendar(context, row));
         if (!empty(row.cellPhone)) {
-            Ui.action(actions, "WhatsApp", view -> openWhatsApp(context, row));
+            Ui.action(actions, "Lembrar no WhatsApp", view -> openWhatsApp(context, row));
         }
         // Concluir exige registrar o pagamento: a consulta só fica concluída quando ele é salvo.
-        Ui.action(actions, "Concluir", view -> {
+        Ui.action(actions, "Concluir e receber", view -> {
             Intent intent = new Intent(context, PaymentFormActivity.class);
             intent.putExtra(PaymentFormActivity.EXTRA_APPOINTMENT_ID, appointment.id);
             context.startActivity(intent);
@@ -91,6 +91,7 @@ final class Cards {
             signature.setScaleType(ImageView.ScaleType.FIT_START);
             signature.setMaxHeight(Ui.dp(context, SIGNATURE_PREVIEW_DP));
             signature.setImageBitmap(opened.signature);
+            signature.setContentDescription("Assinatura de " + content.signerName);
             Ui.addWeighted(box, signature);
         });
     }
@@ -127,7 +128,8 @@ final class Cards {
         Appointment appointment = row.appointment;
         Intent intent = new Intent(Intent.ACTION_INSERT)
                 .setData(CalendarContract.Events.CONTENT_URI)
-                .putExtra(CalendarContract.Events.TITLE, appointment.type + " - " + row.patientName)
+                .putExtra(CalendarContract.Events.TITLE,
+                        appointment.type + " - " + shortName(row.patientName))
                 .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, appointment.startsAt)
                 .putExtra(CalendarContract.EXTRA_EVENT_END_TIME,
                         appointment.startsAt + APPOINTMENT_DURATION_MS);
@@ -148,6 +150,17 @@ final class Cards {
         } catch (ActivityNotFoundException e) {
             Ui.toast(context, errorMessage);
         }
+    }
+
+    /**
+     * "Maria S.": o calendário costuma sincronizar com a nuvem (conta Google), então o evento
+     * leva só o necessário para a equipe reconhecer a paciente (LGPD, minimização).
+     */
+    static String shortName(String name) {
+        String trimmed = name == null ? "" : name.trim();
+        String first = WhatsApp.firstName(trimmed);
+        int last = trimmed.lastIndexOf(' ');
+        return last < 0 ? first : first + " " + trimmed.charAt(last + 1) + ".";
     }
 
     private static boolean empty(String text) {

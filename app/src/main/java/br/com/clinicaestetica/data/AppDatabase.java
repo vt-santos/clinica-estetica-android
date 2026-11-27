@@ -15,7 +15,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import java.security.GeneralSecurityException;
 
 @Database(entities = {Patient.class, SkinAssessment.class, TreatmentSession.class,
-        Appointment.class, Payment.class, Consent.class}, version = 4, exportSchema = false)
+        Appointment.class, Payment.class, Consent.class}, version = 5, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     private static final Migration MIGRATION_1_2 = new Migration(1, 2) {
         @Override
@@ -123,6 +123,16 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    /** CPF ou CNPJ da paciente, com índice para achar fichas com o mesmo número. */
+    private static final Migration MIGRATION_4_5 = new Migration(4, 5) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE `patients` ADD COLUMN `taxId` TEXT");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_patients_taxId` "
+                    + "ON `patients` (`taxId`)");
+        }
+    };
+
     private static volatile AppDatabase instance;
 
     public abstract AppDao dao();
@@ -133,7 +143,8 @@ public abstract class AppDatabase extends RoomDatabase {
                 if (instance == null) {
                     instance = Room.databaseBuilder(context.getApplicationContext(),
                                     AppDatabase.class, "clinica.db")
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
+                                    MIGRATION_4_5)
                             .build();
                 }
             }

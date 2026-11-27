@@ -6,13 +6,15 @@ import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 /** Ficha de Anamnese Facial: dados pessoais, emergência e histórico. */
-@Entity(tableName = "patients", indices = @Index("name"))
+@Entity(tableName = "patients", indices = {@Index("name"), @Index("taxId")})
 public class Patient {
     @PrimaryKey(autoGenerate = true)
     public long id;
 
     public long createdAt;
     public String name;
+    /** CPF ou CNPJ só com números e letras, sem pontuação (ver {@link TaxId}). */
+    public String taxId;
     public String sex;
     public long birthDate;
     public String address;

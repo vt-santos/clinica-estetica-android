@@ -9,6 +9,7 @@ import android.graphics.Typeface;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -119,6 +121,7 @@ final class Ui {
     static TextView title(ViewGroup parent, String text) {
         TextView view = text(parent, text, 32);
         view.setTypeface(SERIF);
+        ViewCompat.setAccessibilityHeading(view, true);
         ((ViewGroup.MarginLayoutParams) view.getLayoutParams()).bottomMargin =
                 dp(parent.getContext(), 20);
         return view;
@@ -127,7 +130,17 @@ final class Ui {
     static TextView section(ViewGroup parent, String text) {
         TextView view = text(parent, text, 19);
         view.setTypeface(SERIF);
+        ViewCompat.setAccessibilityHeading(view, true);
         view.setPadding(0, dp(parent.getContext(), 20), 0, 0);
+        return view;
+    }
+
+    /** Título de um grupo dentro de uma seção, por exemplo "Condições de saúde". */
+    static TextView subsection(ViewGroup parent, String text) {
+        TextView view = text(parent, text, 16);
+        view.setTypeface(MEDIUM);
+        view.setPadding(0, dp(parent.getContext(), 14), 0, dp(parent.getContext(), 2));
+        ViewCompat.setAccessibilityHeading(view, true);
         return view;
     }
 
@@ -196,6 +209,27 @@ final class Ui {
         layout.addView(edit);
         addFilling(parent, layout);
         return edit;
+    }
+
+    /**
+     * Liga ou desliga um campo criado por {@link #field}. Desligado, ele fica acinzentado e
+     * não recebe toque nem foco, inclusive pelo leitor de tela.
+     */
+    static void setFieldEnabled(TextInputEditText edit, boolean enabled) {
+        TextInputLayout layout = layoutOf(edit);
+        if (layout != null) {
+            layout.setEnabled(enabled);
+        }
+        edit.setEnabled(enabled);
+    }
+
+    /** A moldura de um campo criado por {@link #field}, onde ficam a dica e o erro. */
+    static TextInputLayout layoutOf(TextInputEditText edit) {
+        View parent = (View) edit.getParent();
+        while (parent != null && !(parent instanceof TextInputLayout)) {
+            parent = parent.getParent() instanceof View ? (View) parent.getParent() : null;
+        }
+        return (TextInputLayout) parent;
     }
 
     /** Chama action sempre que o texto do campo mudar. */
@@ -284,11 +318,37 @@ final class Ui {
         }
     }
 
+    /**
+     * Campo que abre um seletor. Um toque abre o seletor direto; pelo teclado físico, o campo
+     * recebe o foco com Tab e abre com Enter ou espaço, para a ficha ser preenchida sem tela.
+     */
     private static TextInputEditText pickerField(ViewGroup parent, String label, String value) {
         TextInputEditText edit = field(parent, label, value, InputType.TYPE_NULL);
-        edit.setFocusable(false);
+        edit.setKeyListener(null);
+        edit.setFocusable(true);
+        edit.setFocusableInTouchMode(false);
         edit.setCursorVisible(false);
+        edit.setShowSoftInputOnFocus(false);
+        openOnConfirmKey(edit, edit::performClick);
         return edit;
+    }
+
+    /** Enter, espaço ou o botão central do controle executam a ação, como um toque. */
+    private static void openOnConfirmKey(View view, Runnable action) {
+        view.setOnKeyListener((target, keyCode, event) -> {
+            if (!isConfirmKey(keyCode)) {
+                return false;
+            }
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                action.run();
+            }
+            return true;
+        });
+    }
+
+    private static boolean isConfirmKey(int keyCode) {
+        return keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER
+                || keyCode == KeyEvent.KEYCODE_SPACE || keyCode == KeyEvent.KEYCODE_DPAD_CENTER;
     }
 
     static MaterialAutoCompleteTextView dropdown(ViewGroup parent, String label, String[] options,
@@ -299,6 +359,16 @@ final class Ui {
         view.setAdapter(new ArrayAdapter<>(parent.getContext(),
                 android.R.layout.simple_list_item_1, options));
         view.setText(value, false);
+        // Enter abre a lista; com a lista aberta, o Enter volta a escolher o item destacado.
+        view.setOnKeyListener((target, keyCode, event) -> {
+            if (view.isPopupShowing() || !isConfirmKey(keyCode)) {
+                return false;
+            }
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                view.showDropDown();
+            }
+            return true;
+        });
         return view;
     }
 
@@ -394,6 +464,8 @@ final class Ui {
 
         if (onClick != null) {
             card.setOnClickListener(onClick);
+            // Cartões tocáveis também recebem o foco do teclado (Tab) e abrem com Enter.
+            card.setFocusable(true);
         }
         addFilling(parent, card);
         return actions;

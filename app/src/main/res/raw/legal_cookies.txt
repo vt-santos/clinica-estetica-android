@@ -1,0 +1,20 @@
+Cookies, Rastreamento e Serviços de Terceiros
+
+# Cookies
+Este aplicativo não usa cookies. Por isso, não exibe aviso ou banner de cookies.
+
+# Rastreamento e análise de uso
+O aplicativo não tem nenhuma ferramenta de análise de uso (analytics), publicidade, rastreamento ou relatório de falhas. Ele usa a internet para uma única coisa: conferir um CNPJ na Receita Federal (veja abaixo). Nenhum dado de paciente sai do tablet de forma automática.
+
+# Conteúdo e serviços de terceiros
+O aplicativo não carrega vídeos, mapas, fontes, anúncios ou qualquer conteúdo de outros sites.
+Consulta de CNPJ: quando a equipe digita um CNPJ completo e válido na ficha, o aplicativo envia só esse número à BrasilAPI (brasilapi.com.br), serviço gratuito que repassa os dados públicos da Receita Federal, e mostra a razão social e a situação cadastral. Nenhum outro dado da ficha é enviado. CPF nunca é consultado fora do tablet.
+Dois botões abrem outros aplicativos, sempre por ação da equipe:
+Calendário: abre o calendário do tablet com a consulta preenchida. O evento passa a seguir as regras do aplicativo de calendário e da conta configurada nele (por exemplo, a sincronização com a conta Google).
+WhatsApp: abre uma conversa com a mensagem de lembrete. O envio segue a política de privacidade do WhatsApp (Meta).
+Por isso, o evento criado no calendário leva só o primeiro nome e a inicial do sobrenome da paciente e o tipo de consulta, sem dados de saúde.
+
+# Site da clínica
+Se a clínica tiver site ou página de agendamento on-line, eles precisam de uma política de cookies própria e de um aviso de cookies com opção de aceitar ou recusar antes de ativar qualquer ferramenta de análise ou anúncios.
+
+Versão {{VERSAO}}, atualizada em {{ATUALIZADO}}.

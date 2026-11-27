@@ -43,6 +43,13 @@ public class SignatureView extends View {
 
         baseline.setColor(ContextCompat.getColor(context, R.color.sage));
         baseline.setStrokeWidth(Ui.dp(context, 1));
+        describe();
+    }
+
+    /** O TalkBack informa se a área de assinatura já foi preenchida. */
+    private void describe() {
+        setContentDescription(empty ? "Área de assinatura, vazia. Assine com a caneta."
+                : "Área de assinatura, assinada.");
     }
 
     public boolean isEmpty() {
@@ -52,6 +59,7 @@ public class SignatureView extends View {
     public void clear() {
         strokes.reset();
         empty = true;
+        describe();
         invalidate();
     }
 
@@ -109,6 +117,7 @@ public class SignatureView extends View {
                 strokes.lineTo(event.getX(), event.getY() + 0.1f);
                 empty = false;
                 drawing = false;
+                describe();
                 break;
             case MotionEvent.ACTION_CANCEL:
                 drawing = false;

@@ -29,6 +29,7 @@ import br.com.clinicaestetica.data.Cpf;
 import br.com.clinicaestetica.data.FormCatalog;
 import br.com.clinicaestetica.data.Json;
 import br.com.clinicaestetica.data.Patient;
+import br.com.clinicaestetica.data.TaxId;
 
 /**
  * Cadastro com todos os campos da Ficha de Anamnese Facial. A ficha só é gravada junto com
@@ -69,6 +70,7 @@ public class PatientFormActivity extends ScreenActivity {
     private TextView termView;
     private TextView signatureLabel;
     private MaterialCheckBox accepted;
+    private MaterialCheckBox privacyAccepted;
     private TextInputEditText place;
     private SignatureView signature;
 
@@ -77,6 +79,7 @@ public class PatientFormActivity extends ScreenActivity {
             emergencyName, emergencyPhone, doctorName, doctorPhone, healthPlan, healthPlanCard,
             hospital, guardianName, guardianCpf, guardianPhone;
     private MaterialAutoCompleteTextView guardianRelationship;
+    private TaxIdField taxId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -123,7 +126,9 @@ public class PatientFormActivity extends ScreenActivity {
         cellPhone = Ui.field(line, "Celular / WhatsApp", patient.cellPhone, PHONE);
         homePhone = Ui.field(line, "Telefone residencial", patient.homePhone, PHONE);
         workPhone = Ui.field(line, "Telefone comercial", patient.workPhone, PHONE);
-        email = Ui.field(content, "E-mail", patient.email, EMAIL);
+        line = Ui.row(content);
+        taxId = new TaxIdField(line, dao, patient.id, patient.taxId);
+        email = Ui.field(line, "E-mail", patient.email, EMAIL);
         referral = Ui.field(content, "Indicação", patient.referral);
         visitReason = Ui.field(content, "Motivo da visita", patient.visitReason);
 
@@ -143,8 +148,11 @@ public class PatientFormActivity extends ScreenActivity {
 
         Ui.section(content, "Histórico");
         JSONObject saved = Json.object(patient.historyJson);
-        for (FormCatalog.Question question : FormCatalog.HISTORY) {
-            addQuestion(question, saved.optJSONObject(question.key));
+        for (FormCatalog.QuestionGroup group : FormCatalog.HISTORY_GROUPS) {
+            Ui.subsection(content, group.title);
+            for (FormCatalog.Question question : group.questions) {
+                addQuestion(question, saved.optJSONObject(question.key));
+            }
         }
         buildConsent();
 
@@ -187,9 +195,17 @@ public class PatientFormActivity extends ScreenActivity {
         content.addView(signing);
 
         termView = Ui.text(signing, getString(R.string.term_text), 15);
+        Ui.action(signing, "Ler o Aviso de Privacidade",
+                view -> startActivity(LegalActivity.intent(this, LegalDocs.PRIVACY)));
         accepted = new MaterialCheckBox(this);
         accepted.setText("Li e estou de acordo com o termo");
         signing.addView(accepted);
+        // Caixa separada: o consentimento para dados de saúde precisa ser específico e
+        // destacado (LGPD art. 11, I), e não pode vir embutido no aceite geral.
+        privacyAccepted = new MaterialCheckBox(this);
+        privacyAccepted.setText("Autorizo o tratamento dos dados pessoais e de saúde desta ficha, "
+                + "conforme o Aviso de Privacidade");
+        signing.addView(privacyAccepted);
         place = Ui.field(signing, "Local", patient.city);
 
         signatureLabel = Ui.text(signing, "", 15);
@@ -211,6 +227,19 @@ public class PatientFormActivity extends ScreenActivity {
         TextInputEditText detail = question.detailLabel == null ? null
                 : Ui.field(line, question.detailLabel, saved == null ? "" : saved.optString("d"));
         answers.put(question.key, new Answer(yesNo, detail));
+        if (detail != null && question.detailOnlyWhenYes) {
+            Ui.setFieldEnabled(detail, YES_NO[0].equals(selected));
+            yesNo.setOnCheckedStateChangeListener((group, ids) -> onAnswerChanged(group, detail));
+        }
+    }
+
+    /** "Qual?" só fica disponível com a resposta Sim; com Não ou sem resposta, é limpo. */
+    private static void onAnswerChanged(ChipGroup yesNo, TextInputEditText detail) {
+        boolean yes = Ui.checked(yesNo).contains(YES_NO[0]);
+        if (!yes) {
+            detail.setText("");
+        }
+        Ui.setFieldEnabled(detail, yes);
     }
 
     private void onBirthDateChanged() {
@@ -242,8 +271,9 @@ public class PatientFormActivity extends ScreenActivity {
             return;
         }
         termView.setText(term);
-        if (accepted.isChecked() || !signature.isEmpty()) {
+        if (accepted.isChecked() || privacyAccepted.isChecked() || !signature.isEmpty()) {
             accepted.setChecked(false);
+            privacyAccepted.setChecked(false);
             signature.clear();
             Ui.toast(this, "O termo mudou. Colha a assinatura novamente.");
         }
@@ -259,7 +289,22 @@ public class PatientFormActivity extends ScreenActivity {
             Ui.toast(this, problem);
             return;
         }
+        if (edited.taxId.isEmpty()) {
+            continueSave(edited);
+            return;
+        }
+        // Confere de novo no banco na hora de salvar: a verificação do campo pode não ter
+        // terminado ainda.
+        Async.load(() -> dao.patientWithTaxId(edited.taxId, edited.id), other -> {
+            if (other != null && TaxId.kind(edited.taxId) == TaxId.Kind.CPF) {
+                Ui.toast(this, "Este CPF já está na ficha de " + other.name + ".");
+                return;
+            }
+            continueSave(edited);
+        });
+    }
 
+    private void continueSave(Patient edited) {
         List<String> changes = changesIn(edited);
         boolean signingOpen = signing.getVisibility() == View.VISIBLE;
         if (!signingOpen && changes.isEmpty()) {
@@ -273,6 +318,10 @@ public class PatientFormActivity extends ScreenActivity {
         }
         if (!accepted.isChecked()) {
             Ui.toast(this, "Marque a caixa de aceite do termo.");
+            return;
+        }
+        if (!privacyAccepted.isChecked()) {
+            Ui.toast(this, "Marque a autorização de tratamento de dados (LGPD).");
             return;
         }
         if (signature.isEmpty()) {
@@ -294,6 +343,10 @@ public class PatientFormActivity extends ScreenActivity {
         if (edited.birthDate > System.currentTimeMillis()) {
             return "A data de nascimento está no futuro.";
         }
+        if (!edited.taxId.isEmpty() && !TaxId.isValid(edited.taxId)) {
+            return TaxId.kind(edited.taxId) == TaxId.Kind.CPF
+                    ? "CPF inválido: confira os números." : "CNPJ inválido: confira os números.";
+        }
         if (!isMinor(edited.birthDate)) {
             return null;
         }
@@ -313,6 +366,7 @@ public class PatientFormActivity extends ScreenActivity {
     private void requestSignature(String term) {
         termView.setText(term);
         accepted.setChecked(false);
+        privacyAccepted.setChecked(false);
         signature.clear();
         signing.setVisibility(View.VISIBLE);
         if (signAgain != null) {
@@ -329,11 +383,14 @@ public class PatientFormActivity extends ScreenActivity {
     }
 
     private String termFor(Patient edited, List<String> changes) {
-        String term = isMinor(edited.birthDate)
+        boolean minor = isMinor(edited.birthDate);
+        String term = minor
                 ? getString(R.string.term_minor_text, orBlank(edited.guardianName),
                 orBlank(Cpf.format(edited.guardianCpf)),
                 orBlank(edited.guardianRelationship).toLowerCase(), orBlank(edited.name))
                 : getString(R.string.term_text);
+        term += "\n\n" + getString(minor ? R.string.term_privacy_minor : R.string.term_privacy,
+                getString(R.string.company_legal_name), LegalDocs.version(this));
         if (consent == null || changes.isEmpty()) {
             return term;
         }
@@ -347,6 +404,8 @@ public class PatientFormActivity extends ScreenActivity {
         signed.termText = term;
         signed.place = Ui.value(place);
         signed.accepted = accepted.isChecked();
+        signed.privacyAccepted = privacyAccepted.isChecked();
+        signed.privacyVersion = LegalDocs.version(this);
         if (isMinor(edited.birthDate)) {
             signed.signerName = edited.guardianName;
             signed.signerRole = "Responsável legal (" + edited.guardianRelationship + ")";
@@ -369,6 +428,7 @@ public class PatientFormActivity extends ScreenActivity {
         edited.id = patient.id;
         edited.createdAt = patient.createdAt;
         edited.name = Ui.value(name);
+        edited.taxId = taxId.value();
         edited.sex = Ui.value(sex);
         edited.birthDate = birthDate[0];
         edited.address = Ui.value(address);

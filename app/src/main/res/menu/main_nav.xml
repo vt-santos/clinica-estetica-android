@@ -16,4 +16,8 @@
         android:id="@+id/nav_payments"
         android:icon="@drawable/ic_payments"
         android:title="@string/nav_payments" />
+    <item
+        android:id="@+id/nav_about"
+        android:icon="@drawable/ic_info"
+        android:title="@string/nav_about" />
 </menu>

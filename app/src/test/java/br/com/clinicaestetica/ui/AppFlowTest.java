@@ -19,6 +19,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.os.Looper;
 import android.view.InputDevice;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
@@ -61,12 +62,15 @@ import br.com.clinicaestetica.R;
 import br.com.clinicaestetica.data.AppDao;
 import br.com.clinicaestetica.data.AppDatabase;
 import br.com.clinicaestetica.data.Appointment;
+import br.com.clinicaestetica.data.CnpjLookup;
 import br.com.clinicaestetica.data.Consent;
 import br.com.clinicaestetica.data.ConsentContent;
 import br.com.clinicaestetica.data.ConsentVault;
+import br.com.clinicaestetica.data.FormCatalog;
 import br.com.clinicaestetica.data.Patient;
 import br.com.clinicaestetica.data.Payment;
 import br.com.clinicaestetica.data.SkinAssessment;
+import br.com.clinicaestetica.data.TaxId;
 import br.com.clinicaestetica.data.TreatmentSession;
 
 /** Percorre o app de ponta a ponta com as telas reais, sem aparelho. */
@@ -83,6 +87,20 @@ public class AppFlowTest {
     @Before
     public void useSoftwareKey() {
         ConsentVault.useTestKey(new SecretKeySpec(new byte[32], "AES"));
+        // Os testes nunca acessam a internet de verdade.
+        CnpjLookup.executor = Runnable::run;
+        CnpjLookup.source = cnpj -> CnpjLookup.Result.of(CnpjLookup.Status.OFFLINE);
+    }
+
+    @Test
+    public void readsBrasilApiAnswer() {
+        CnpjLookup.Result found = CnpjLookup.parse("{\"razao_social\":\"EMPRESA X LTDA\","
+                + "\"nome_fantasia\":\"\",\"descricao_situacao_cadastral\":\"BAIXADA\"}");
+        assertEquals(CnpjLookup.Status.FOUND, found.status);
+        assertFalse("baixada não é ativa", found.isActive());
+        assertEquals("Receita: EMPRESA X LTDA · situação baixada", found.describe());
+        assertEquals(CnpjLookup.Status.ERROR, CnpjLookup.parse("<html>").status);
+        assertEquals(CnpjLookup.Status.NOT_FOUND, CnpjLookup.parse("{}").status);
     }
 
     @Test
@@ -91,6 +109,41 @@ public class AppFlowTest {
         assertEquals(15050, Fmt.parseCents("150,50"));
         assertEquals(150050, Fmt.parseCents("1.500,50"));
         assertEquals(-1, Fmt.parseCents("abc"));
+    }
+
+    @Test
+    public void groupsRelatedHealthQuestions() {
+        assertEquals("hipertensão logo depois de diabetes",
+                question("diabetes") + 1, question("hypertension"));
+        assertEquals("Condições de saúde", FormCatalog.HISTORY_GROUPS[0].title);
+        int total = 0;
+        for (FormCatalog.QuestionGroup group : FormCatalog.HISTORY_GROUPS) {
+            total += group.questions.length;
+        }
+        assertEquals(total, FormCatalog.HISTORY.length);
+    }
+
+    @Test
+    public void detailFieldOnlyAvailableWhenYes() {
+        PatientFormActivity form = open(PatientFormActivity.class, new Intent());
+        assertTrue(text(root(form), "Condições de saúde"));
+        assertTrue(text(root(form), "Tem hipertensão (pressão alta)?"));
+
+        TextInputLayout which = field(root(form), "Quais?");
+        assertFalse("sem resposta, Quais? fica bloqueado", which.isEnabled());
+        assertFalse(which.getEditText().isEnabled());
+
+        chip(form, "Sim", question("allergies")).setChecked(true);
+        assertTrue("Sim libera o Quais?", which.getEditText().isEnabled());
+        which.getEditText().setText("Dipirona");
+
+        chip(form, "Não", question("allergies")).setChecked(true);
+        assertFalse("Não bloqueia o Quais?", which.getEditText().isEnabled());
+        assertEquals("Não apaga o que estava escrito", "",
+                which.getEditText().getText().toString());
+
+        assertTrue("Observações vale para qualquer resposta",
+                field(root(form), "Observações").getEditText().isEnabled());
     }
 
     @Test
@@ -105,6 +158,114 @@ public class AppFlowTest {
         showsPatientRecord(patient.id);
         showsMainSections();
         registersMinor();
+        checksTaxIdOfNewPatient();
+    }
+
+    /** CPF repetido trava o cadastro; CNPJ é conferido na Receita (aqui, resposta simulada). */
+    private void checksTaxIdOfNewPatient() {
+        CnpjLookup.executor = Runnable::run;
+        CnpjLookup.source = cnpj -> "11222333000181".equals(cnpj)
+                ? new CnpjLookup.Result(CnpjLookup.Status.FOUND, "Empresa Exemplo Ltda",
+                "Exemplo", "ATIVA")
+                : CnpjLookup.Result.of(CnpjLookup.Status.NOT_FOUND);
+        try {
+            PatientFormActivity form = open(PatientFormActivity.class, new Intent());
+            setField(form, "Nome *", "Joana Lima");
+            pickDate(form, "Data de nascimento *", 1985, Calendar.JUNE, 2);
+            setField(form, TaxIdField.LABEL, "529.982.247-25");
+            settle();
+            assertEquals("CPF já cadastrado na ficha de Maria Silva",
+                    String.valueOf(field(root(form), TaxIdField.LABEL).getError()));
+            acceptTerms(form);
+            stroke(first(root(form), SignatureView.class), MotionEvent.TOOL_TYPE_STYLUS);
+            save(form);
+            assertFalse("CPF repetido não salva", form.isFinishing());
+
+            setField(form, TaxIdField.LABEL, "11222333000181");
+            settle();
+            assertEquals("11.222.333/0001-81",
+                    field(root(form), TaxIdField.LABEL).getEditText().getText().toString());
+            String helper = String.valueOf(field(root(form), TaxIdField.LABEL).getHelperText());
+            assertTrue(helper, helper.startsWith("Receita: Empresa Exemplo Ltda (Exemplo)"));
+            assertTrue(helper, helper.contains("situação ativa"));
+
+            setField(form, TaxIdField.LABEL, "12.ABC.345/01DE-35");
+            settle();
+            assertEquals("CNPJ não encontrado na Receita Federal",
+                    String.valueOf(field(root(form), TaxIdField.LABEL).getError()));
+        } finally {
+            CnpjLookup.executor = Runnable::run;
+            CnpjLookup.source = cnpj -> CnpjLookup.Result.of(CnpjLookup.Status.OFFLINE);
+        }
+    }
+
+    /**
+     * Internet só para a consulta de CNPJ: nenhum outro código abre conexão, e o app não aceita
+     * tráfego sem HTTPS. Sem analytics, anúncios, cookies ou conteúdo de terceiros.
+     */
+    @Test
+    public void onlyCnpjLookupReachesTheInternet() throws Exception {
+        java.util.List<String> offenders = new java.util.ArrayList<>();
+        try (java.util.stream.Stream<java.nio.file.Path> files =
+                     java.nio.file.Files.walk(java.nio.file.Paths.get("src/main/java"))) {
+            for (java.nio.file.Path file : (Iterable<java.nio.file.Path>) files::iterator) {
+                if (!file.toString().endsWith(".java")
+                        || file.getFileName().toString().equals("CnpjLookup.java")) {
+                    continue;
+                }
+                String code = new String(java.nio.file.Files.readAllBytes(file),
+                        java.nio.charset.StandardCharsets.UTF_8);
+                if (code.matches("(?s).*(openConnection|new URL\\(|new Socket\\(|HttpClient).*")) {
+                    offenders.add(file.getFileName().toString());
+                }
+            }
+        }
+        assertTrue("só CnpjLookup acessa a rede: " + offenders, offenders.isEmpty());
+        assertTrue(CnpjLookup.BASE_URL.startsWith("https://brasilapi.com.br/"));
+    }
+
+    @Test
+    public void legalDocumentsOpen() {
+        for (String key : LegalDocs.ALL) {
+            String text = LegalDocs.load(app, key);
+            assertFalse(key + " sem marcadores soltos", text.contains("{{"));
+            assertTrue(key, text.contains(app.getString(R.string.legal_version)));
+            LegalActivity screen = open(LegalActivity.class, LegalActivity.intent(app, key));
+            assertEquals(LegalDocs.title(app, key), screen.toolbar.getTitle().toString());
+            assertTrue(hasText(root(screen), "revisão por advogado"));
+        }
+        assertTrue("dados da empresa ainda são modelo", LegalDocs.hasPending(app));
+        assertTrue(LegalDocs.load(app, LegalDocs.PRIVACY)
+                .contains(app.getString(R.string.company_cnpj)));
+        screenshot(open(LegalActivity.class, LegalActivity.intent(app, LegalDocs.PRIVACY)),
+                "aviso-privacidade");
+    }
+
+    /** Datas, listas e cartões funcionam com teclado físico; ícones têm descrição. */
+    @Test
+    public void worksWithKeyboardAndScreenReader() {
+        PatientFormActivity form = open(PatientFormActivity.class, new Intent());
+        assertEquals("Voltar", form.toolbar.getNavigationContentDescription().toString());
+        android.widget.EditText date = field(root(form), "Data de nascimento *").getEditText();
+        assertTrue("data recebe foco pelo teclado", date.isFocusable());
+        date.requestFocus();
+        date.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER));
+        date.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER));
+        settle();
+        assertTrue("Enter abre o seletor de data",
+                ShadowDialog.getLatestDialog() instanceof DatePickerDialog);
+        ShadowDialog.getLatestDialog().dismiss();
+
+        SignatureView signature = first(root(form), SignatureView.class);
+        assertTrue(signature.getContentDescription().toString().contains("vazia"));
+        stroke(signature, MotionEvent.TOOL_TYPE_STYLUS);
+        assertTrue(signature.getContentDescription().toString().contains("assinada"));
+
+        MainActivity main = open(MainActivity.class, new Intent());
+        View card = clickableAncestor(main.findViewById(R.id.container), "Pacientes");
+        assertNotNull(card);
+        assertTrue("cartão do Início recebe foco", card.isFocusable());
+        assertTrue(card.getContentDescription().toString().startsWith("Pacientes: "));
     }
 
     private Patient registersPatient() throws Exception {
@@ -118,17 +279,33 @@ public class AppFlowTest {
         save(form);
         assertFalse("data de nascimento é obrigatória", form.isFinishing());
         pickDate(form, "Data de nascimento *", 1990, Calendar.MARCH, 15);
+        setField(form, TaxIdField.LABEL, "123.456.789-00");
+        settle();
+        assertEquals("CPF inválido: confira os números (se for CNPJ, continue)",
+                String.valueOf(field(root(form), TaxIdField.LABEL).getError()));
+        save(form);
+        assertFalse("CPF inválido não salva", form.isFinishing());
+        setField(form, TaxIdField.LABEL, "52998224725");
+        settle();
+        assertEquals("máscara aplicada", "529.982.247-25",
+                field(root(form), TaxIdField.LABEL).getEditText().getText().toString());
+        assertEquals("CPF válido ✓",
+                String.valueOf(field(root(form), TaxIdField.LABEL).getHelperText()));
         assertFalse("adulta não pede responsável", field(root(form), "Nome do responsável *").isShown());
         setField(form, "Celular / WhatsApp", "(11) 98888-7777");
         setField(form, "Motivo da visita", "Manchas no rosto");
         setField(form, "Hospital", "Santa Casa");
-        chip(form, "Sim", 1).setChecked(true);
+        chip(form, "Sim", question("allergies")).setChecked(true);
         setField(form, "Quais?", "Dipirona");
         screenshot(form, "cadastro");
 
         save(form);
         assertFalse("termo é obrigatório", form.isFinishing());
-        first(root(form), MaterialCheckBox.class).setChecked(true);
+        assertTrue("termo traz o consentimento LGPD", hasText(root(form), "LGPD"));
+        checkBoxes(root(form)).get(0).setChecked(true);
+        save(form);
+        assertFalse("autorização de dados (LGPD) é obrigatória", form.isFinishing());
+        checkBoxes(root(form)).get(1).setChecked(true);
         save(form);
         assertFalse("assinatura é obrigatória", form.isFinishing());
 
@@ -154,10 +331,14 @@ public class AppFlowTest {
         assertEquals("Maria Silva", signed.signerName);
         assertEquals("Paciente", signed.signerRole);
         assertTrue(signed.termText.startsWith("Estou ciente e de acordo"));
+        assertTrue(signed.termText.contains("TRATAMENTO DE DADOS PESSOAIS (LGPD)"));
+        assertTrue(signed.privacyAccepted);
+        assertFalse(signed.privacyVersion.isEmpty());
         assertEquals("imagem guardada junto ao aceite", (byte) 0x89, signed.signaturePng[0]);
         assertThrows("outra paciente não abre", GeneralSecurityException.class,
                 () -> ConsentVault.open(consent.sealedPackage, saved.id + 1));
         assertEquals("Maria Silva", saved.name);
+        assertEquals("CPF gravado sem pontuação", "52998224725", saved.taxId);
         assertEquals("Santa Casa", saved.hospital);
         JSONObject allergies = new JSONObject(saved.historyJson).getJSONObject("allergies");
         assertEquals("S", allergies.getString("a"));
@@ -165,7 +346,7 @@ public class AppFlowTest {
 
         Intent edit = new Intent().putExtra(PatientFormActivity.EXTRA_PATIENT_ID, saved.id);
         PatientFormActivity reopened = open(PatientFormActivity.class, edit);
-        assertTrue(chip(reopened, "Sim", 1).isChecked());
+        assertTrue(chip(reopened, "Sim", question("allergies")).isChecked());
         save(reopened);
         assertTrue("ficha assinada salva sem nova assinatura", reopened.isFinishing());
         assertEquals("Dipirona", new JSONObject(db(() -> dao.patient(saved.id)).historyJson)
@@ -186,7 +367,7 @@ public class AppFlowTest {
         assertTrue(hasText(root(form), "Profissão: (vazio) → Dentista"));
 
         screenshot(form, "termo-alteracao");
-        first(root(form), MaterialCheckBox.class).setChecked(true);
+        acceptTerms(form);
         SignatureView signature = first(root(form), SignatureView.class);
         stroke(signature, MotionEvent.TOOL_TYPE_STYLUS);
 
@@ -196,7 +377,7 @@ public class AppFlowTest {
         assertTrue(signature.isEmpty());
         assertTrue(hasText(root(form), "Profissão: (vazio) → Médica"));
 
-        first(root(form), MaterialCheckBox.class).setChecked(true);
+        acceptTerms(form);
         stroke(signature, MotionEvent.TOOL_TYPE_STYLUS);
         save(form);
         assertTrue(form.isFinishing());
@@ -222,7 +403,7 @@ public class AppFlowTest {
         setField(form, "Parentesco *", "Mãe");
         assertTrue(hasText(root(form), "Carla Souza"));
         assertTrue(hasText(root(form), "mãe e responsável legal por Ana Souza, menor de idade"));
-        first(root(form), MaterialCheckBox.class).setChecked(true);
+        acceptTerms(form);
         SignatureView signature = first(root(form), SignatureView.class);
         stroke(signature, MotionEvent.TOOL_TYPE_STYLUS);
         save(form);
@@ -230,9 +411,11 @@ public class AppFlowTest {
 
         setField(form, "CPF do responsável *", "529.982.247-25");
         assertTrue("termo mudou, assinatura antiga é descartada", signature.isEmpty());
-        assertFalse(first(root(form), MaterialCheckBox.class).isChecked());
+        for (MaterialCheckBox box : checkBoxes(root(form))) {
+            assertFalse("aceites são desmarcados quando o termo muda", box.isChecked());
+        }
         screenshot(form, "termo-menor");
-        first(root(form), MaterialCheckBox.class).setChecked(true);
+        acceptTerms(form);
         stroke(signature, MotionEvent.TOOL_TYPE_STYLUS);
         save(form);
         assertTrue(form.isFinishing());
@@ -245,6 +428,7 @@ public class AppFlowTest {
         assertEquals("Responsável legal (Mãe)", signed.signerRole);
         assertEquals("52998224725", signed.signerCpf);
         assertTrue(signed.termText.contains("CPF 529.982.247-25"));
+        assertTrue(signed.termText.contains("como responsável legal, autorizo"));
     }
 
     private static ConsentContent opened(Consent consent) throws Exception {
@@ -424,6 +608,19 @@ public class AppFlowTest {
             settle();
             assertTrue(expected[i], hasText(root(detail), expected[i]));
         }
+
+        // O formato de moeda pt-BR usa espaço não separável depois de "R$".
+        String export = db(() -> PatientExport.text(dao, patientId, "Clínica"))
+                .replace('\u00A0', ' ');
+        for (String text : new String[]{"Maria Silva", "Dipirona", "Cloasma", "Limpeza de pele",
+                "R$ 1.500,50", "Assinado por Maria Silva", "LGPD"}) {
+            assertTrue("exportação tem " + text, export.contains(text));
+        }
+        invoke(detail, "Exportar dados");
+        Intent chooser = lastStarted(detail);
+        assertEquals(Intent.ACTION_CHOOSER, chooser.getAction());
+        Intent shared = chooser.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
+        assertTrue(shared.getStringExtra(Intent.EXTRA_TEXT).contains("Dipirona"));
     }
 
     private void showsMainSections() {
@@ -465,6 +662,24 @@ public class AppFlowTest {
         rail.setSelectedItemId(R.id.nav_payments);
         settle();
         screenshot(main, "pagamentos");
+
+        rail.setSelectedItemId(R.id.nav_about);
+        settle();
+        assertTrue(hasText(window, "CNPJ"));
+        assertTrue(hasText(window, "Encarregado de dados (LGPD)"));
+        assertTrue(hasText(window, "Política de Cancelamento e Reembolso"));
+        screenshot(main, "sobre");
+        assertTrue(clickCard(main.findViewById(R.id.container), "Aviso de Privacidade"));
+        // A MainActivity também abre o pedido de permissão de notificações; procura a política.
+        Intent legal = null;
+        for (Intent next; (next = shadowOf(main).getNextStartedActivity()) != null; ) {
+            if (next.getComponent() != null && LegalActivity.class.getName()
+                    .equals(next.getComponent().getClassName())) {
+                legal = next;
+            }
+        }
+        assertNotNull("tela do Aviso de Privacidade", legal);
+        assertEquals(LegalDocs.PRIVACY, legal.getStringExtra(LegalActivity.EXTRA_DOCUMENT));
         assertFalse(hasText(window, "Marcar como pago"));
     }
 
@@ -486,13 +701,74 @@ public class AppFlowTest {
     }
 
     private void save(ScreenActivity activity) {
+        invoke(activity, "Salvar");
+    }
+
+    private void invoke(ScreenActivity activity, String action) {
         Menu menu = activity.toolbar.getMenu();
         for (int i = 0; i < menu.size(); i++) {
-            if ("Salvar".contentEquals(menu.getItem(i).getTitle())) {
+            if (action.contentEquals(menu.getItem(i).getTitle())) {
                 ((MenuItemImpl) menu.getItem(i)).invoke();
             }
         }
         settle();
+    }
+
+    private static Intent lastStarted(Activity activity) {
+        Intent last = null;
+        for (Intent next; (next = shadowOf(activity).getNextStartedActivity()) != null; ) {
+            last = next;
+        }
+        assertNotNull("nenhuma tela foi aberta", last);
+        return last;
+    }
+
+    /** Marca o aceite do termo e a autorização de tratamento de dados (LGPD). */
+    private static void acceptTerms(Activity activity) {
+        for (MaterialCheckBox box : checkBoxes(root(activity))) {
+            box.setChecked(true);
+        }
+    }
+
+    private static java.util.List<MaterialCheckBox> checkBoxes(View view) {
+        java.util.List<MaterialCheckBox> found = new java.util.ArrayList<>();
+        collectCheckBoxes(view, found);
+        return found;
+    }
+
+    private static void collectCheckBoxes(View view, java.util.List<MaterialCheckBox> found) {
+        if (view instanceof MaterialCheckBox && view.isShown()) {
+            found.add((MaterialCheckBox) view);
+        } else if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                collectCheckBoxes(group.getChildAt(i), found);
+            }
+        }
+    }
+
+    private static View clickableAncestor(View view, String text) {
+        if (view instanceof TextView && text.contentEquals(((TextView) view).getText())) {
+            for (View parent = view; parent != null; parent = (View) parent.getParent()) {
+                if (parent.isClickable()) {
+                    return parent;
+                }
+                if (!(parent.getParent() instanceof View)) {
+                    break;
+                }
+            }
+            return null;
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View found = clickableAncestor(group.getChildAt(i), text);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     private void settle() {
@@ -532,6 +808,31 @@ public class AppFlowTest {
             }
         }
         return null;
+    }
+
+    /** Posição da pergunta na ficha, que é também a ordem dos chips Sim/Não na tela. */
+    private static int question(String key) {
+        for (int i = 0; i < FormCatalog.HISTORY.length; i++) {
+            if (FormCatalog.HISTORY[i].key.equals(key)) {
+                return i;
+            }
+        }
+        throw new AssertionError(key);
+    }
+
+    private static boolean text(View view, String text) {
+        if (view instanceof TextView && text.contentEquals(((TextView) view).getText())) {
+            return true;
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                if (text(group.getChildAt(i), text)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static Chip chip(Activity activity, String text, int skip) {

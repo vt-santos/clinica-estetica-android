@@ -1,11 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        Internet só para consultar CNPJ na Receita Federal pela BrasilAPI (data/CnpjLookup).
+        Nenhum dado de paciente sai do tablet: só o número do CNPJ digitado. Não há analytics,
+        anúncios nem conteúdo de terceiros, e um teste falha se outro código abrir conexão.
+        Só HTTPS (usesCleartextTraffic="false"). Ver docs/CONFORMIDADE.md.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"
+        tools:node="remove" />
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="false"
+        android:usesCleartextTraffic="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher"
@@ -42,6 +55,9 @@
             android:name=".ui.AppointmentFormActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.LegalActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
         <activity
             android:name=".ui.PaymentFormActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"

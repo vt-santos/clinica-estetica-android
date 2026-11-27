@@ -11,6 +11,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import br.com.clinicaestetica.R;
 import br.com.clinicaestetica.data.AppointmentRow;
 import br.com.clinicaestetica.data.Async;
 import br.com.clinicaestetica.data.Consent;
@@ -18,6 +19,7 @@ import br.com.clinicaestetica.data.Cpf;
 import br.com.clinicaestetica.data.FormCatalog;
 import br.com.clinicaestetica.data.Json;
 import br.com.clinicaestetica.data.Patient;
+import br.com.clinicaestetica.data.TaxId;
 import br.com.clinicaestetica.data.PaymentRow;
 import br.com.clinicaestetica.data.SkinAssessment;
 import br.com.clinicaestetica.data.TreatmentSession;
@@ -46,6 +48,7 @@ public class PatientDetailActivity extends ScreenActivity {
             intent.putExtra(PatientFormActivity.EXTRA_PATIENT_ID, patientId);
             startActivity(intent);
         });
+        addAction("Exportar dados", this::exportData);
         addAction("Excluir", () -> Ui.confirm(this,
                 "Excluir esta paciente e todo o histórico dela?",
                 () -> Async.run(() -> dao.delete(patient), this::finish)));
@@ -111,6 +114,7 @@ public class PatientDetailActivity extends ScreenActivity {
         Ui.section(content, "Dados pessoais");
         info("Nascimento", patient.birthDate == 0 ? null
                 : Fmt.date(patient.birthDate) + " (" + Fmt.age(patient.birthDate) + " anos)");
+        info("CPF/CNPJ", TaxId.format(patient.taxId));
         info("Sexo", patient.sex);
         info("Estado civil", patient.maritalStatus);
         info("Etnia", patient.ethnicity);
@@ -139,8 +143,19 @@ public class PatientDetailActivity extends ScreenActivity {
 
         Ui.section(content, "Histórico");
         JSONObject history = Json.object(patient.historyJson);
-        for (FormCatalog.Question question : FormCatalog.HISTORY) {
-            info(question.label, PatientChanges.answer(history, question.key));
+        for (FormCatalog.QuestionGroup group : FormCatalog.HISTORY_GROUPS) {
+            boolean titled = false;
+            for (FormCatalog.Question question : group.questions) {
+                String answer = PatientChanges.answer(history, question.key);
+                if (answer.isEmpty()) {
+                    continue;
+                }
+                if (!titled) {
+                    Ui.subsection(content, group.title);
+                    titled = true;
+                }
+                info(question.label, answer);
+            }
         }
 
         Ui.section(content, "Termo de responsabilidade e ciência do procedimento");
@@ -155,6 +170,27 @@ public class PatientDetailActivity extends ScreenActivity {
                 Cards.consent(content, previous);
             }
         }
+    }
+
+    /**
+     * Pedido de acesso ou portabilidade da paciente (LGPD art. 18): gera uma cópia em texto de
+     * tudo o que o app guarda sobre ela e abre o menu do Android para imprimir, salvar ou enviar.
+     */
+    private void exportData() {
+        if (patient == null) {
+            return;
+        }
+        String clinic = getString(R.string.company_trade_name);
+        Async.load(() -> PatientExport.text(dao, patientId, clinic), text -> {
+            if (text.isEmpty()) {
+                return;
+            }
+            Intent send = new Intent(Intent.ACTION_SEND)
+                    .setType("text/plain")
+                    .putExtra(Intent.EXTRA_SUBJECT, "Dados pessoais de " + patient.name)
+                    .putExtra(Intent.EXTRA_TEXT, text);
+            startActivity(Intent.createChooser(send, "Entregar cópia dos dados da paciente"));
+        });
     }
 
     private void info(String label, String value) {
