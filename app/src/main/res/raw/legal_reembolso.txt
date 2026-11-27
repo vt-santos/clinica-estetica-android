@@ -1,0 +1,25 @@
+Política de Cancelamento e Reembolso
+
+Esta política vale para os serviços de {{NOME_FANTASIA}} ({{RAZAO_SOCIAL}}, CNPJ {{CNPJ}}) e segue o Código de Defesa do Consumidor (Lei 8.078/1990).
+
+# 1. Remarcação e cancelamento de consulta
+Você pode remarcar ou cancelar sem custo avisando com pelo menos {{ANTECEDENCIA}} horas de antecedência, pelo telefone {{TELEFONE}}.
+Faltas sem aviso: {{REGRA_FALTA}}.
+
+# 2. Pacotes de sessões
+Se você desistir de um pacote, devolvemos o valor das sessões não realizadas. Podemos descontar apenas o valor das sessões já feitas, pelo preço avulso informado no momento da compra, e produtos já usados ou comprados especificamente para você, desde que isso tenha sido informado por escrito antes da compra.
+Nunca cobramos multa que deixe você em desvantagem exagerada (CDC art. 51).
+
+# 3. Compras fora da clínica
+Se a contratação for feita fora da clínica (por telefone, WhatsApp ou internet), você pode desistir em até 7 dias a partir da contratação, com devolução integral do valor pago, inclusive das sessões ainda não feitas (CDC art. 49).
+
+# 4. Procedimento realizado
+Procedimento já realizado não é reembolsado só porque o resultado esperado não foi alcançado, porque os resultados variam de pessoa para pessoa, como explicado no termo de ciência. Se houver falha na prestação do serviço, você tem direito a refazer o serviço, ao abatimento proporcional do preço ou à devolução do valor (CDC art. 20).
+
+# 5. Como é feita a devolução
+Pela mesma forma de pagamento usada, em até {{PRAZO_REEMBOLSO}} dias depois do pedido. Compras no cartão são estornadas conforme o prazo da operadora.
+
+# 6. Contato
+{{TELEFONE}} · {{EMAIL}} · {{ENDERECO}} · {{HORARIO}}
+
+Versão {{VERSAO}}, atualizada em {{ATUALIZADO}}.

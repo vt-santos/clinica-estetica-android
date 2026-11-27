@@ -69,6 +69,7 @@ public class PatientFormActivity extends ScreenActivity {
     private TextView termView;
     private TextView signatureLabel;
     private MaterialCheckBox accepted;
+    private MaterialCheckBox privacyAccepted;
     private TextInputEditText place;
     private SignatureView signature;
 
@@ -190,9 +191,17 @@ public class PatientFormActivity extends ScreenActivity {
         content.addView(signing);
 
         termView = Ui.text(signing, getString(R.string.term_text), 15);
+        Ui.action(signing, "Ler o Aviso de Privacidade",
+                view -> startActivity(LegalActivity.intent(this, LegalDocs.PRIVACY)));
         accepted = new MaterialCheckBox(this);
         accepted.setText("Li e estou de acordo com o termo");
         signing.addView(accepted);
+        // Caixa separada: o consentimento para dados de saúde precisa ser específico e
+        // destacado (LGPD art. 11, I), e não pode vir embutido no aceite geral.
+        privacyAccepted = new MaterialCheckBox(this);
+        privacyAccepted.setText("Autorizo o tratamento dos dados pessoais e de saúde desta ficha, "
+                + "conforme o Aviso de Privacidade");
+        signing.addView(privacyAccepted);
         place = Ui.field(signing, "Local", patient.city);
 
         signatureLabel = Ui.text(signing, "", 15);
@@ -258,8 +267,9 @@ public class PatientFormActivity extends ScreenActivity {
             return;
         }
         termView.setText(term);
-        if (accepted.isChecked() || !signature.isEmpty()) {
+        if (accepted.isChecked() || privacyAccepted.isChecked() || !signature.isEmpty()) {
             accepted.setChecked(false);
+            privacyAccepted.setChecked(false);
             signature.clear();
             Ui.toast(this, "O termo mudou. Colha a assinatura novamente.");
         }
@@ -289,6 +299,10 @@ public class PatientFormActivity extends ScreenActivity {
         }
         if (!accepted.isChecked()) {
             Ui.toast(this, "Marque a caixa de aceite do termo.");
+            return;
+        }
+        if (!privacyAccepted.isChecked()) {
+            Ui.toast(this, "Marque a autorização de tratamento de dados (LGPD).");
             return;
         }
         if (signature.isEmpty()) {
@@ -329,6 +343,7 @@ public class PatientFormActivity extends ScreenActivity {
     private void requestSignature(String term) {
         termView.setText(term);
         accepted.setChecked(false);
+        privacyAccepted.setChecked(false);
         signature.clear();
         signing.setVisibility(View.VISIBLE);
         if (signAgain != null) {
@@ -345,11 +360,14 @@ public class PatientFormActivity extends ScreenActivity {
     }
 
     private String termFor(Patient edited, List<String> changes) {
-        String term = isMinor(edited.birthDate)
+        boolean minor = isMinor(edited.birthDate);
+        String term = minor
                 ? getString(R.string.term_minor_text, orBlank(edited.guardianName),
                 orBlank(Cpf.format(edited.guardianCpf)),
                 orBlank(edited.guardianRelationship).toLowerCase(), orBlank(edited.name))
                 : getString(R.string.term_text);
+        term += "\n\n" + getString(minor ? R.string.term_privacy_minor : R.string.term_privacy,
+                getString(R.string.company_legal_name), LegalDocs.version(this));
         if (consent == null || changes.isEmpty()) {
             return term;
         }
@@ -363,6 +381,8 @@ public class PatientFormActivity extends ScreenActivity {
         signed.termText = term;
         signed.place = Ui.value(place);
         signed.accepted = accepted.isChecked();
+        signed.privacyAccepted = privacyAccepted.isChecked();
+        signed.privacyVersion = LegalDocs.version(this);
         if (isMinor(edited.birthDate)) {
             signed.signerName = edited.guardianName;
             signed.signerRole = "Responsável legal (" + edited.guardianRelationship + ")";

@@ -1,0 +1,46 @@
+Aviso de Privacidade
+
+Este aviso explica como {{NOME_FANTASIA}} ({{RAZAO_SOCIAL}}, CNPJ {{CNPJ}}) trata os dados pessoais das pacientes, de acordo com a Lei Geral de Proteção de Dados (Lei 13.709/2018, LGPD).
+
+# 1. Quem é responsável pelos seus dados
+A controladora dos dados é {{RAZAO_SOCIAL}}, com endereço em {{ENDERECO}}. O(a) encarregado(a) pelo tratamento de dados é {{ENCARREGADO}}, que atende pelo e-mail {{EMAIL_ENCARREGADO}}.
+
+# 2. Quais dados coletamos
+Dados de identificação e contato: nome, data de nascimento, sexo, estado civil, profissão, endereço, telefones e e-mail.
+Dados para emergências: contato de emergência, médico, convênio e hospital de preferência.
+Dados de saúde (dados sensíveis): respostas da ficha de anamnese, avaliação da pele, sessões e protocolos realizados.
+Dados do responsável legal, quando a paciente é menor de idade: nome, CPF, parentesco e telefone.
+Termo assinado: texto aceito, local, data, hora e imagem da assinatura.
+Dados financeiros: valores, datas e formas de pagamento. Não guardamos números de cartão.
+Só pedimos o que é necessário para o atendimento. Os campos que não são obrigatórios podem ficar em branco.
+
+# 3. Para que usamos
+Avaliar se o procedimento é indicado e seguro para você, registrar o tratamento, agendar consultas e retornos, enviar lembretes, receber pagamentos, emitir comprovantes e cumprir obrigações legais.
+Não usamos seus dados para publicidade e não vendemos seus dados.
+
+# 4. Bases legais
+Dados de saúde: seu consentimento específico e destacado (LGPD art. 11, I) e a tutela da saúde (art. 11, II, f).
+Cadastro, agenda e pagamentos: execução do contrato de prestação de serviço (art. 7º, V) e cumprimento de obrigação legal (art. 7º, II).
+Dados de menores de idade: consentimento do responsável legal, no melhor interesse da criança ou do adolescente (art. 14).
+
+# 5. Onde ficam e como protegemos
+Os dados ficam somente no tablet da clínica, no aplicativo de gestão, sem envio para servidores, nuvem ou empresas de análise. O termo assinado é criptografado (AES-256) com chave guardada no próprio aparelho. O backup automático do sistema está desligado. Apenas a equipe da clínica tem acesso ao aparelho.
+
+# 6. Com quem compartilhamos
+Não compartilhamos seus dados com terceiros, exceto: quando você pede (por exemplo, um relatório para o seu médico); quando a lei ou uma autoridade exige; e quando enviamos lembretes pelo WhatsApp para o número que você informou, o que passa pelos serviços da Meta.
+
+# 7. Por quanto tempo guardamos
+Guardamos a ficha e o histórico do tratamento por {{PRAZO_GUARDA}}, para sua segurança e para defesa em eventual processo. Depois disso, os dados são apagados.
+
+# 8. Seus direitos
+Você pode, a qualquer momento e sem custo: confirmar se tratamos seus dados; ter acesso a eles e receber uma cópia; corrigir dados incompletos ou errados; pedir a anonimização, o bloqueio ou a exclusão de dados desnecessários; saber com quem compartilhamos; revogar o consentimento; e reclamar à Autoridade Nacional de Proteção de Dados (ANPD).
+Para exercer seus direitos, fale com a recepção ou com {{ENCARREGADO}} pelo e-mail {{EMAIL_ENCARREGADO}}. Respondemos em até 15 dias.
+Se você revogar o consentimento para dados de saúde, não poderemos continuar o tratamento estético com segurança, mas os registros já feitos podem ser mantidos pelo prazo do item 7.
+
+# 9. Fotos
+O aplicativo não tira nem guarda fotos. Se a clínica fotografar o antes e depois, isso depende de uma autorização de uso de imagem separada, por escrito.
+
+# 10. Alterações
+Este aviso pode mudar. A versão em vigor fica disponível na recepção e na tela "Sobre" do aplicativo.
+
+Versão {{VERSAO}}, atualizada em {{ATUALIZADO}}.

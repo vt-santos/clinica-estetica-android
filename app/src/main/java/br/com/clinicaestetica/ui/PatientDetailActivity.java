@@ -11,6 +11,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import br.com.clinicaestetica.R;
 import br.com.clinicaestetica.data.AppointmentRow;
 import br.com.clinicaestetica.data.Async;
 import br.com.clinicaestetica.data.Consent;
@@ -46,6 +47,7 @@ public class PatientDetailActivity extends ScreenActivity {
             intent.putExtra(PatientFormActivity.EXTRA_PATIENT_ID, patientId);
             startActivity(intent);
         });
+        addAction("Exportar dados", this::exportData);
         addAction("Excluir", () -> Ui.confirm(this,
                 "Excluir esta paciente e todo o histórico dela?",
                 () -> Async.run(() -> dao.delete(patient), this::finish)));
@@ -166,6 +168,27 @@ public class PatientDetailActivity extends ScreenActivity {
                 Cards.consent(content, previous);
             }
         }
+    }
+
+    /**
+     * Pedido de acesso ou portabilidade da paciente (LGPD art. 18): gera uma cópia em texto de
+     * tudo o que o app guarda sobre ela e abre o menu do Android para imprimir, salvar ou enviar.
+     */
+    private void exportData() {
+        if (patient == null) {
+            return;
+        }
+        String clinic = getString(R.string.company_trade_name);
+        Async.load(() -> PatientExport.text(dao, patientId, clinic), text -> {
+            if (text.isEmpty()) {
+                return;
+            }
+            Intent send = new Intent(Intent.ACTION_SEND)
+                    .setType("text/plain")
+                    .putExtra(Intent.EXTRA_SUBJECT, "Dados pessoais de " + patient.name)
+                    .putExtra(Intent.EXTRA_TEXT, text);
+            startActivity(Intent.createChooser(send, "Entregar cópia dos dados da paciente"));
+        });
     }
 
     private void info(String label, String value) {

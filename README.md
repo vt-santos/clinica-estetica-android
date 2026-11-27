@@ -36,6 +36,8 @@ Sem internet, sem servidor, sem mensalidade: todos os dados ficam no próprio ap
 | 💰 **Pagamentos** | A consulta só é concluída quando o pagamento é registrado. |
 | ✍️ **Termo de consentimento** | Assinatura digital na tela, criptografada junto com o termo. Se a ficha mudar, o app pede uma nova assinatura e mostra o que mudou. |
 | 👨‍👧 **Menores de idade** | Verificação de idade e termo assinado pelo responsável legal. |
+| 🛡️ **LGPD e políticas** | Consentimento específico para dados de saúde, aviso de privacidade, termos de uso, política de reembolso, exportação dos dados da paciente e tela Sobre. Veja [docs/CONFORMIDADE.md](docs/CONFORMIDADE.md). |
+| ♿ **Acessibilidade** | Contraste WCAG AA, descrições para o TalkBack e uso completo por teclado físico. |
 
 > 🔒 Projeto feito para uma cliente real. O repositório tem só o código, sem nenhum dado de pacientes.
 

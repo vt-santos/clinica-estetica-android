@@ -1,0 +1,18 @@
+Acessibilidade
+
+O aplicativo foi ajustado para seguir as diretrizes de acessibilidade WCAG 2.1, nível AA, e a Lei Brasileira de Inclusão (Lei 13.146/2015) no que se aplica a um sistema interno.
+
+# O que já foi feito
+Contraste: textos e bordas de campos atendem ao contraste mínimo (4,5:1 para textos e 3:1 para bordas).
+Leitor de tela: botões, ícones, logotipo, assinatura e cartões têm descrição para o TalkBack, e títulos de seção são anunciados como títulos.
+Teclado: todos os campos, listas, datas, horários, botões e cartões podem ser usados com teclado físico (Tab para avançar e Enter para abrir ou confirmar).
+Botões: os botões dizem o que fazem e têm área de toque de pelo menos 48 dp.
+Tamanho do texto: o texto acompanha o tamanho de fonte escolhido nas configurações do tablet.
+
+# Limitação conhecida
+A assinatura precisa ser feita com a caneta ou o dedo. Quem não puder assinar na tela pode assinar o termo em papel, que deve ser guardado junto ao prontuário, com a observação registrada na ficha.
+
+# Contato
+Encontrou alguma barreira? Fale com {{TELEFONE}} ou {{EMAIL}}.
+
+Versão {{VERSAO}}, atualizada em {{ATUALIZADO}}.

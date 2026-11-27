@@ -123,7 +123,7 @@ O valor em dinheiro é guardado **em centavos** (`long`) para evitar erros de ar
 
 | Arquivo | Função |
 |---|---|
-| `MainActivity.java` | Tela principal com o menu lateral (Início, Pacientes, Agenda e Pagamentos). Troca as seções e pede permissão de notificação no Android 13 ou mais novo |
+| `MainActivity.java` | Tela principal com o menu lateral (Início, Pacientes, Agenda, Pagamentos e Sobre). Troca as seções e pede permissão de notificação no Android 13 ou mais novo |
 | `ScreenFragment.java` | Base das seções do menu. Cria a área rolável e chama `refresh()` sempre que a seção volta a aparecer, para os dados estarem sempre atualizados |
 | `ScreenActivity.java` | Base das telas de formulário: barra superior com voltar, área rolável e `addAction()` para botões como Salvar e Excluir |
 | `Ui.java` | Peças de interface reutilizadas em todo o app (detalhes abaixo) |
@@ -149,7 +149,7 @@ O valor em dinheiro é guardado **em centavos** (`long`) para evitar erros de ar
 - `parseCents()` entende "150", "150,50" e "1.500,50" e devolve -1 se o valor for inválido.
 
 **`Cards.java`**
-- `appointment()` mostra uma consulta com os botões Calendário, WhatsApp e Concluir.
+- `appointment()` mostra uma consulta com os botões Pôr no calendário, Lembrar no WhatsApp e Concluir e receber. O evento do calendário leva só o primeiro nome e a inicial do sobrenome.
 - `payment()` mostra um pagamento com o botão Marcar como pago.
 - `consent()` abre o termo criptografado fora da thread principal e mostra o texto, quem assinou e a imagem. Se a chave não estiver no aparelho, mostra um aviso em vez de travar.
 - `addToCalendar()` abre o calendário do tablet com a consulta já preenchida.
@@ -297,6 +297,8 @@ Estes pontos precisam ser resolvidos antes de usar dados reais:
 5. **Excluir apaga tudo.** O botão Excluir remove a paciente e todos os termos, sem registro. Seria bom exigir senha da dona ou guardar um registro de exclusões.
 6. **Só a anamnese exige assinatura.** Avaliações, sessões, consultas e pagamentos podem ser alterados livremente.
 7. **Valor jurídico.** A assinatura na tela é um registro de aceite com data, texto e imagem protegidos, mas não é uma assinatura eletrônica certificada (ICP-Brasil). O texto dos termos foi escrito por mim como rascunho e precisa de revisão jurídica.
+
+A situação de cada exigência legal e de acessibilidade (LGPD, CDC, WCAG) está em [CONFORMIDADE.md](CONFORMIDADE.md).
 
 ---
 

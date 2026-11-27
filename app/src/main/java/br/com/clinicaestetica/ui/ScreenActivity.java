@@ -33,6 +33,7 @@ abstract class ScreenActivity extends AppCompatActivity {
         toolbar.setBackgroundResource(R.color.paper);
         toolbar.setTitleTextAppearance(this, R.style.TextAppearance_Clinica_ToolbarTitle);
         toolbar.setNavigationIcon(R.drawable.ic_arrow_back);
+        toolbar.setNavigationContentDescription(R.string.back);
         toolbar.setNavigationOnClickListener(view -> finish());
         root.addView(toolbar);
 

@@ -19,6 +19,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.os.Looper;
 import android.view.InputDevice;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
@@ -143,6 +144,60 @@ public class AppFlowTest {
         registersMinor();
     }
 
+    /** Nada de internet: sem analytics, anúncios, cookies ou conteúdo de terceiros. */
+    @Test
+    public void appCannotReachTheInternet() throws Exception {
+        String[] permissions = app.getPackageManager().getPackageInfo(app.getPackageName(),
+                android.content.pm.PackageManager.GET_PERMISSIONS).requestedPermissions;
+        for (String permission : permissions == null ? new String[0] : permissions) {
+            assertFalse(permission, permission.equals(android.Manifest.permission.INTERNET));
+        }
+    }
+
+    @Test
+    public void legalDocumentsOpen() {
+        for (String key : LegalDocs.ALL) {
+            String text = LegalDocs.load(app, key);
+            assertFalse(key + " sem marcadores soltos", text.contains("{{"));
+            assertTrue(key, text.contains(app.getString(R.string.legal_version)));
+            LegalActivity screen = open(LegalActivity.class, LegalActivity.intent(app, key));
+            assertEquals(LegalDocs.title(app, key), screen.toolbar.getTitle().toString());
+            assertTrue(hasText(root(screen), "revisão por advogado"));
+        }
+        assertTrue("dados da empresa ainda são modelo", LegalDocs.hasPending(app));
+        assertTrue(LegalDocs.load(app, LegalDocs.PRIVACY)
+                .contains(app.getString(R.string.company_cnpj)));
+        screenshot(open(LegalActivity.class, LegalActivity.intent(app, LegalDocs.PRIVACY)),
+                "aviso-privacidade");
+    }
+
+    /** Datas, listas e cartões funcionam com teclado físico; ícones têm descrição. */
+    @Test
+    public void worksWithKeyboardAndScreenReader() {
+        PatientFormActivity form = open(PatientFormActivity.class, new Intent());
+        assertEquals("Voltar", form.toolbar.getNavigationContentDescription().toString());
+        android.widget.EditText date = field(root(form), "Data de nascimento *").getEditText();
+        assertTrue("data recebe foco pelo teclado", date.isFocusable());
+        date.requestFocus();
+        date.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER));
+        date.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER));
+        settle();
+        assertTrue("Enter abre o seletor de data",
+                ShadowDialog.getLatestDialog() instanceof DatePickerDialog);
+        ShadowDialog.getLatestDialog().dismiss();
+
+        SignatureView signature = first(root(form), SignatureView.class);
+        assertTrue(signature.getContentDescription().toString().contains("vazia"));
+        stroke(signature, MotionEvent.TOOL_TYPE_STYLUS);
+        assertTrue(signature.getContentDescription().toString().contains("assinada"));
+
+        MainActivity main = open(MainActivity.class, new Intent());
+        View card = clickableAncestor(main.findViewById(R.id.container), "Pacientes");
+        assertNotNull(card);
+        assertTrue("cartão do Início recebe foco", card.isFocusable());
+        assertTrue(card.getContentDescription().toString().startsWith("Pacientes: "));
+    }
+
     private Patient registersPatient() throws Exception {
         PatientFormActivity form = open(PatientFormActivity.class, new Intent());
         assertEquals("Nova paciente", form.toolbar.getTitle().toString());
@@ -164,7 +219,11 @@ public class AppFlowTest {
 
         save(form);
         assertFalse("termo é obrigatório", form.isFinishing());
-        first(root(form), MaterialCheckBox.class).setChecked(true);
+        assertTrue("termo traz o consentimento LGPD", hasText(root(form), "LGPD"));
+        checkBoxes(root(form)).get(0).setChecked(true);
+        save(form);
+        assertFalse("autorização de dados (LGPD) é obrigatória", form.isFinishing());
+        checkBoxes(root(form)).get(1).setChecked(true);
         save(form);
         assertFalse("assinatura é obrigatória", form.isFinishing());
 
@@ -190,6 +249,9 @@ public class AppFlowTest {
         assertEquals("Maria Silva", signed.signerName);
         assertEquals("Paciente", signed.signerRole);
         assertTrue(signed.termText.startsWith("Estou ciente e de acordo"));
+        assertTrue(signed.termText.contains("TRATAMENTO DE DADOS PESSOAIS (LGPD)"));
+        assertTrue(signed.privacyAccepted);
+        assertFalse(signed.privacyVersion.isEmpty());
         assertEquals("imagem guardada junto ao aceite", (byte) 0x89, signed.signaturePng[0]);
         assertThrows("outra paciente não abre", GeneralSecurityException.class,
                 () -> ConsentVault.open(consent.sealedPackage, saved.id + 1));
@@ -222,7 +284,7 @@ public class AppFlowTest {
         assertTrue(hasText(root(form), "Profissão: (vazio) → Dentista"));
 
         screenshot(form, "termo-alteracao");
-        first(root(form), MaterialCheckBox.class).setChecked(true);
+        acceptTerms(form);
         SignatureView signature = first(root(form), SignatureView.class);
         stroke(signature, MotionEvent.TOOL_TYPE_STYLUS);
 
@@ -232,7 +294,7 @@ public class AppFlowTest {
         assertTrue(signature.isEmpty());
         assertTrue(hasText(root(form), "Profissão: (vazio) → Médica"));
 
-        first(root(form), MaterialCheckBox.class).setChecked(true);
+        acceptTerms(form);
         stroke(signature, MotionEvent.TOOL_TYPE_STYLUS);
         save(form);
         assertTrue(form.isFinishing());
@@ -258,7 +320,7 @@ public class AppFlowTest {
         setField(form, "Parentesco *", "Mãe");
         assertTrue(hasText(root(form), "Carla Souza"));
         assertTrue(hasText(root(form), "mãe e responsável legal por Ana Souza, menor de idade"));
-        first(root(form), MaterialCheckBox.class).setChecked(true);
+        acceptTerms(form);
         SignatureView signature = first(root(form), SignatureView.class);
         stroke(signature, MotionEvent.TOOL_TYPE_STYLUS);
         save(form);
@@ -266,9 +328,11 @@ public class AppFlowTest {
 
         setField(form, "CPF do responsável *", "529.982.247-25");
         assertTrue("termo mudou, assinatura antiga é descartada", signature.isEmpty());
-        assertFalse(first(root(form), MaterialCheckBox.class).isChecked());
+        for (MaterialCheckBox box : checkBoxes(root(form))) {
+            assertFalse("aceites são desmarcados quando o termo muda", box.isChecked());
+        }
         screenshot(form, "termo-menor");
-        first(root(form), MaterialCheckBox.class).setChecked(true);
+        acceptTerms(form);
         stroke(signature, MotionEvent.TOOL_TYPE_STYLUS);
         save(form);
         assertTrue(form.isFinishing());
@@ -281,6 +345,7 @@ public class AppFlowTest {
         assertEquals("Responsável legal (Mãe)", signed.signerRole);
         assertEquals("52998224725", signed.signerCpf);
         assertTrue(signed.termText.contains("CPF 529.982.247-25"));
+        assertTrue(signed.termText.contains("como responsável legal, autorizo"));
     }
 
     private static ConsentContent opened(Consent consent) throws Exception {
@@ -460,6 +525,19 @@ public class AppFlowTest {
             settle();
             assertTrue(expected[i], hasText(root(detail), expected[i]));
         }
+
+        // O formato de moeda pt-BR usa espaço não separável depois de "R$".
+        String export = db(() -> PatientExport.text(dao, patientId, "Clínica"))
+                .replace('\u00A0', ' ');
+        for (String text : new String[]{"Maria Silva", "Dipirona", "Cloasma", "Limpeza de pele",
+                "R$ 1.500,50", "Assinado por Maria Silva", "LGPD"}) {
+            assertTrue("exportação tem " + text, export.contains(text));
+        }
+        invoke(detail, "Exportar dados");
+        Intent chooser = lastStarted(detail);
+        assertEquals(Intent.ACTION_CHOOSER, chooser.getAction());
+        Intent shared = chooser.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
+        assertTrue(shared.getStringExtra(Intent.EXTRA_TEXT).contains("Dipirona"));
     }
 
     private void showsMainSections() {
@@ -501,6 +579,24 @@ public class AppFlowTest {
         rail.setSelectedItemId(R.id.nav_payments);
         settle();
         screenshot(main, "pagamentos");
+
+        rail.setSelectedItemId(R.id.nav_about);
+        settle();
+        assertTrue(hasText(window, "CNPJ"));
+        assertTrue(hasText(window, "Encarregado de dados (LGPD)"));
+        assertTrue(hasText(window, "Política de Cancelamento e Reembolso"));
+        screenshot(main, "sobre");
+        assertTrue(clickCard(main.findViewById(R.id.container), "Aviso de Privacidade"));
+        // A MainActivity também abre o pedido de permissão de notificações; procura a política.
+        Intent legal = null;
+        for (Intent next; (next = shadowOf(main).getNextStartedActivity()) != null; ) {
+            if (next.getComponent() != null && LegalActivity.class.getName()
+                    .equals(next.getComponent().getClassName())) {
+                legal = next;
+            }
+        }
+        assertNotNull("tela do Aviso de Privacidade", legal);
+        assertEquals(LegalDocs.PRIVACY, legal.getStringExtra(LegalActivity.EXTRA_DOCUMENT));
         assertFalse(hasText(window, "Marcar como pago"));
     }
 
@@ -522,13 +618,74 @@ public class AppFlowTest {
     }
 
     private void save(ScreenActivity activity) {
+        invoke(activity, "Salvar");
+    }
+
+    private void invoke(ScreenActivity activity, String action) {
         Menu menu = activity.toolbar.getMenu();
         for (int i = 0; i < menu.size(); i++) {
-            if ("Salvar".contentEquals(menu.getItem(i).getTitle())) {
+            if (action.contentEquals(menu.getItem(i).getTitle())) {
                 ((MenuItemImpl) menu.getItem(i)).invoke();
             }
         }
         settle();
+    }
+
+    private static Intent lastStarted(Activity activity) {
+        Intent last = null;
+        for (Intent next; (next = shadowOf(activity).getNextStartedActivity()) != null; ) {
+            last = next;
+        }
+        assertNotNull("nenhuma tela foi aberta", last);
+        return last;
+    }
+
+    /** Marca o aceite do termo e a autorização de tratamento de dados (LGPD). */
+    private static void acceptTerms(Activity activity) {
+        for (MaterialCheckBox box : checkBoxes(root(activity))) {
+            box.setChecked(true);
+        }
+    }
+
+    private static java.util.List<MaterialCheckBox> checkBoxes(View view) {
+        java.util.List<MaterialCheckBox> found = new java.util.ArrayList<>();
+        collectCheckBoxes(view, found);
+        return found;
+    }
+
+    private static void collectCheckBoxes(View view, java.util.List<MaterialCheckBox> found) {
+        if (view instanceof MaterialCheckBox && view.isShown()) {
+            found.add((MaterialCheckBox) view);
+        } else if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                collectCheckBoxes(group.getChildAt(i), found);
+            }
+        }
+    }
+
+    private static View clickableAncestor(View view, String text) {
+        if (view instanceof TextView && text.contentEquals(((TextView) view).getText())) {
+            for (View parent = view; parent != null; parent = (View) parent.getParent()) {
+                if (parent.isClickable()) {
+                    return parent;
+                }
+                if (!(parent.getParent() instanceof View)) {
+                    break;
+                }
+            }
+            return null;
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View found = clickableAncestor(group.getChildAt(i), text);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     private void settle() {

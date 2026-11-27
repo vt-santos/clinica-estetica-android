@@ -1,0 +1,27 @@
+Termos de Uso do Aplicativo
+
+Estes termos valem para a equipe de {{NOME_FANTASIA}} ({{RAZAO_SOCIAL}}, CNPJ {{CNPJ}}) que usa este aplicativo de gestão no tablet da clínica.
+
+# 1. Para que serve
+O aplicativo organiza fichas de anamnese, avaliações, sessões, agenda e pagamentos. Ele não faz diagnóstico, não indica tratamento e não substitui o julgamento da profissional responsável.
+
+# 2. Quem pode usar
+Somente pessoas da equipe autorizadas pela clínica. O tablet deve ter bloqueio de tela com senha ou biometria e não pode ficar desbloqueado sem supervisão.
+
+# 3. Responsabilidades de quem usa
+Registrar informações verdadeiras e completas.
+Colher a assinatura da própria paciente, ou do responsável legal quando ela for menor de idade, depois que ela ler o termo e o aviso de privacidade.
+Não copiar, fotografar ou enviar dados de pacientes para fora do aplicativo, salvo a pedido da própria paciente ou por obrigação legal.
+Avisar a responsável pela clínica imediatamente em caso de perda, roubo ou acesso indevido ao tablet. Incidentes de segurança podem precisar ser comunicados à ANPD e às pacientes (LGPD art. 48).
+
+# 4. Dados e segurança
+Os dados ficam só no tablet. A clínica é a controladora dos dados e responde por eles perante as pacientes e a ANPD. Veja o Aviso de Privacidade.
+Não desinstale o aplicativo: a desinstalação apaga os dados e a chave de criptografia.
+
+# 5. Limitações
+O aplicativo é fornecido como está. Mantenha cópias de segurança conforme a orientação de quem dá suporte ao sistema.
+
+# 6. Contato e foro
+Dúvidas: {{TELEFONE}} ou {{EMAIL}}. Fica eleito o foro de {{CIDADE_FORO}}.
+
+Versão {{VERSAO}}, atualizada em {{ATUALIZADO}}.
